@@ -18,11 +18,11 @@
         <mockitoJunitVersion>5.20.0</mockitoJunitVersion>
 
         <!-- Plugin Versions -->
-        <impsortPluginVersion>1.11.0</impsortPluginVersion>
-        <formatterPluginVersion>2.16.0</formatterPluginVersion>
-        <compilerPluginVerison>3.11.0</compilerPluginVerison>
-        <jarPluginVerison>3.3.0</jarPluginVerison>
-        <surefirePluginVersion>3.2.2</surefirePluginVersion>
+        <impsortPluginVersion>1.12.0</impsortPluginVersion>
+        <formatterPluginVersion>2.29.0</formatterPluginVersion>
+        <compilerPluginVerison>3.14.1</compilerPluginVerison>
+        <jarPluginVerison>3.4.2</jarPluginVerison>
+        <surefirePluginVersion>3.5.4</surefirePluginVersion>
     </properties>
 
     <dependencyManagement>
