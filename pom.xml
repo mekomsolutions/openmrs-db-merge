@@ -67,8 +67,9 @@
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>${formatterPluginVersion}</version>
                     <configuration>
+                        <encoding>UTF-8</encoding>
                         <lineEnding>LF</lineEnding>
-                        <configFile>../src/main/resources/Formatter.xml</configFile>
+                        <configFile>../config/Formatter.xml</configFile>
                         <includes>
                             <include>**/*.java</include>
                         </includes>
