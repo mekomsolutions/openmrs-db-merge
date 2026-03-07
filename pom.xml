@@ -84,7 +84,7 @@
                     <configuration>
                         <encoding>UTF-8</encoding>
                         <lineEnding>LF</lineEnding>
-                        <configFile>../config/Formatter.xml</configFile>
+                        <configFile>config/Formatter.xml</configFile>
                         <includes>
                             <include>**/*.java</include>
                         </includes>
