@@ -10,5 +10,18 @@
  */
 package net.mekomsolutions.db.importer;
 
-public record ForeignKey(String columnName, String referenceTable, String referencedColumn) {
+import java.util.Map;
+
+public record Table(Map<String, Column> columns) {
+	
+	/**
+	 * Gets a Column object matching the specified name.
+	 *
+	 * @param columnName the name of the column to retrieve
+	 * @return the Column object associated with the specified column name.
+	 */
+	public Column getColumn(String columnName) {
+		return columns.get(columnName);
+	}
+	
 }

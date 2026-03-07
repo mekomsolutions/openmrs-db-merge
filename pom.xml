@@ -13,7 +13,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.release>17</maven.compiler.release>
-        <springBootVersion>3.5.9</springBootVersion>
+        <springBootVersion>3.5.11</springBootVersion>
         <junitVersion>5.13.4</junitVersion>
         <mockitoJunitVersion>5.20.0</mockitoJunitVersion>
 

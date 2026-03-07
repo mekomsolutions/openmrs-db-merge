@@ -10,11 +10,5 @@
  */
 package net.mekomsolutions.db.importer;
 
-public record Column(String columnName, String columnType, int columnSize, boolean isNullable) {
-	
-	@Override
-	public String toString() {
-		return "ColumnMetadata{" + "columnName='" + columnName + '\'' + ", columnType='" + columnType + '\''
-		        + ", columnSize=" + columnSize + ", isNullable=" + isNullable + '}';
-	}
+public record Column(String columnName, String columnType, boolean isNullable, int columnSize, ForeignKey foreignKey) {
 }
