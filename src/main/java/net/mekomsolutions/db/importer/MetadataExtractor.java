@@ -15,16 +15,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MetadataExtractor {
-
+	
 	private JdbcTemplate jdbcTemplate;
-
+	
 	@Value("${import.database}")
 	private String db;
-
+	
 	public MetadataExtractor(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
-
+	
 	/**
 	 * Gets metadata information for a table and creates a Table object containing the information.
 	 *
@@ -39,7 +39,7 @@ public class MetadataExtractor {
 			return new Table(nameColMap);
 		});
 	}
-
+	
 	/**
 	 * Retrieves metadata information about all columns in a table, including column name, type, size
 	 * nullability and foreign keys.
@@ -53,7 +53,7 @@ public class MetadataExtractor {
 		List<Column> columnMetadataList = new ArrayList<>();
 		Map<String, ForeignKey> colAndFkMap = getForeignKeyMetadata(table, connection).stream()
 		        .collect(Collectors.toMap(ForeignKey::columnName, fk -> fk));
-
+		
 		try (ResultSet rs = connection.getMetaData().getColumns(null, db, table, null)) {
 			while (rs.next()) {
 				String columnName = rs.getString("COLUMN_NAME");
@@ -64,10 +64,10 @@ public class MetadataExtractor {
 				columnMetadataList.add(new Column(columnName, columnType, isNullable, columnSize, fk));
 			}
 		}
-
+		
 		return columnMetadataList;
 	}
-
+	
 	/**
 	 * Retrieves foreign key information for the specific table.
 	 *
@@ -86,8 +86,8 @@ public class MetadataExtractor {
 				foreignKeys.add(new ForeignKey(columnName, referenceTable, referencedColumn));
 			}
 		}
-
+		
 		return foreignKeys;
 	}
-
+	
 }
