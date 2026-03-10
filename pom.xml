@@ -17,6 +17,9 @@
         <junitVersion>5.13.4</junitVersion>
         <mockitoJunitVersion>5.20.0</mockitoJunitVersion>
 
+        <!-- Other tools -->
+        <lombokVersion>1.18.30</lombokVersion>
+
         <!-- Plugin Versions -->
         <impsortPluginVersion>1.12.0</impsortPluginVersion>
         <formatterPluginVersion>2.16.0</formatterPluginVersion>
@@ -41,6 +44,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombokVersion}</version>
+            <scope>provided</scope>
         </dependency>
 
         <!--Test dependencies -->

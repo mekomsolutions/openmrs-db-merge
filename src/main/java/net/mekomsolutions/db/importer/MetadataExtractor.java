@@ -8,20 +8,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class MetadataExtractor {
 	
 	private JdbcTemplate jdbcTemplate;
 	
-	@Value("${import.database}")
+	@Value("${source.database}")
 	private String db;
 	
-	public MetadataExtractor(JdbcTemplate jdbcTemplate) {
+	public MetadataExtractor(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 	
@@ -33,6 +37,8 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public Table getTable(String table) {
+		log.info("Fetching metadata for table: {}", table);
+		
 		return jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
 			List<Column> columns = getColumns(table, c);
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::columnName, col -> col));
@@ -50,6 +56,8 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public List<Column> getColumns(String table, Connection connection) throws SQLException {
+		log.debug("Fetching column metadata for table: {}", table);
+		
 		List<Column> columnMetadataList = new ArrayList<>();
 		Map<String, ForeignKey> colAndFkMap = getForeignKeyMetadata(table, connection).stream()
 		        .collect(Collectors.toMap(ForeignKey::columnName, fk -> fk));
@@ -77,6 +85,8 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public List<ForeignKey> getForeignKeyMetadata(String table, Connection connection) throws SQLException {
+		log.info("Fetching foreign keys for table: {}", table);
+		
 		List<ForeignKey> foreignKeys = new ArrayList<>();
 		try (ResultSet rs = connection.getMetaData().getImportedKeys(null, db, table)) {
 			while (rs.next()) {
