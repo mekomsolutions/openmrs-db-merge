@@ -12,15 +12,15 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class DataSourceConfig {
 	
 	@Primary
-	@Bean(name = "destinationDataSource")
-	@ConfigurationProperties(prefix = "spring.datasource.destination")
+	@Bean(name = "sinkDataSource")
+	@ConfigurationProperties(prefix = "spring.datasource.sink")
 	public DataSource destinationDataSource() {
 		return DataSourceBuilder.create().build();
 	}
 	
 	@Primary
-	@Bean(name = "destinationJdbcTemplate")
-	public JdbcTemplate primaryJdbcTemplate(@Qualifier("destinationDataSource") DataSource ds) {
+	@Bean(name = "sinkJdbcTemplate")
+	public JdbcTemplate primaryJdbcTemplate(@Qualifier("sinkDataSource") DataSource ds) {
 		return new JdbcTemplate(ds);
 	}
 	

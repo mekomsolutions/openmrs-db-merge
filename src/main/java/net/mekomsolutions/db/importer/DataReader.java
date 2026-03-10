@@ -40,7 +40,9 @@ public class DataReader extends DataAccessor {
 	 *         corresponding values as values
 	 */
 	public List<Map<String, Object>> readNextBatch(String table, int minId) {
-		log.info("Fetching next batch of rows from table {} with id greater than: {}", table, minId);
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching next batch of rows from table {} with id greater than: {}", table, minId);
+		}
 		
 		String query = String.format("SELECT * FROM %s WHERE id > ? ORDER BY id ASC LIMIT ?", table);
 		List<Map<String, Object>> rows = new ArrayList<>(batchSize);
@@ -54,6 +56,10 @@ public class DataReader extends DataAccessor {
 				}
 				
 				rows.add(row);
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Fetched {} rows from table {} with id greater than: {}", rows.size(), table, minId);
 			}
 			
 			return rows;
