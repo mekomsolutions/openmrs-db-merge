@@ -43,26 +43,34 @@ public class DataWriter extends DataAccessor {
 			log.info("Inserting {} rows into table {}", rows.size(), table);
 		}
 		
-		int[] updateCounts;
+		String columns = String.join(",", columnNames);
+		String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
+		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columns, placeholders);
+		
+		return batchUpdate(sql, table, rows, true);
+	}
+	
+	private int[] batchUpdate(String sql, String table, List<Object[]> rows, boolean isInsert) {
 		try {
-			String columns = String.join(",", columnNames);
-			String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
-			String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columns, placeholders);
-			
 			if (log.isDebugEnabled()) {
-				log.debug("Executing batch insert sql: {}", sql);
+				final String op = isInsert ? "insert" : "update";
+				log.debug("Executing batch {} sql: {}", op, sql);
 			}
 			
-			updateCounts = jdbcTemplate.batchUpdate(sql, rows);
+			int[] updateCounts = jdbcTemplate.batchUpdate(sql, rows);
 			int insertCount = Arrays.stream(updateCounts).sum();
 			if (log.isDebugEnabled()) {
-				log.debug("{} rows of {} successfully inserted into table {}", insertCount, rows.size(), table);
+				final String op = isInsert ? "inserted" : "updated";
+				log.debug("{} rows of {} successfully {} into table {}", insertCount, rows.size(), op, table);
 			}
 			
 			return updateCounts;
 		}
 		catch (Exception e) {
-			log.error("Error occurred performing batch inserting of data into table {}: {}", table, e.getMessage(), e);
+			final String op = isInsert ? "insert" : "update";
+			final String msg = String.format("Error occurred performing batch %s into table %s: %s", op, table,
+			    e.getMessage());
+			log.warn(msg, e);
 		}
 		
 		return new int[] {};
