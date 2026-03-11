@@ -50,6 +50,27 @@ public class DataWriter extends DataAccessor {
 		return batchUpdate(sql, table, rows, true);
 	}
 	
+	/**
+	 * Updates a batch of rows in the specified database table.
+	 *
+	 * @param table the name of the database table where the rows will be updated.
+	 * @param columnNames a list of column names that correspond to the table's structure.
+	 * @param rows a list of object arrays representing the rows to update, where each array contains
+	 *            the values for the corresponding columns.
+	 * @return an array of integers representing the number of rows affected for each batch operation.
+	 */
+	public int[] updateBatch(String table, List<String> columnNames, List<Object[]> rows) {
+		if (log.isDebugEnabled()) {
+			log.info("Updating {} rows into table {}", rows.size(), table);
+		}
+		
+		String columns = String.join(",", columnNames);
+		String placeholders = columnNames.stream().map(c -> c + " = ?").collect(Collectors.joining(","));
+		String sql = String.format("UPDATE %s SET %s", table, columns, placeholders);
+		
+		return batchUpdate(sql, table, rows, false);
+	}
+	
 	private int[] batchUpdate(String sql, String table, List<Object[]> rows, boolean isInsert) {
 		try {
 			if (log.isDebugEnabled()) {
