@@ -1,16 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!--
-
-    Copyright (C) Amiyul LLC - All Rights Reserved
-
-    This source code is protected under international copyright law. All rights
-    reserved and protected by the copyright holder.
-
-    This file is confidential and only available to authorized individuals with the
-    permission of the copyright holder. If you encounter this file and do not have
-    permission, please contact the copyright holder and delete this file.
-
--->
 <profiles version="11">
 <profile kind="CodeFormatterProfile" name="Custom Formatter" version="11">
 <setting id="org.eclipse.jdt.core.formatter.comment.insert_new_line_before_root_tags" value="insert"/>
