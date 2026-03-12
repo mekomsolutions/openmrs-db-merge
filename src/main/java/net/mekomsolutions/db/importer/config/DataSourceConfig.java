@@ -6,33 +6,36 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class DataSourceConfig {
 	
-	@Primary
-	@Bean(name = "sinkDataSource")
+	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.sink")
-	public DataSource destinationDataSource() {
+	public DataSource sinkDataSource() {
 		return DataSourceBuilder.create().build();
 	}
 	
-	@Primary
-	@Bean(name = "sinkJdbcTemplate")
-	public JdbcTemplate primaryJdbcTemplate(@Qualifier("sinkDataSource") DataSource ds) {
+	@Bean
+	public JdbcTemplate sinkJdbcTemplate(@Qualifier("sinkDataSource") DataSource ds) {
 		return new JdbcTemplate(ds);
 	}
 	
-	@Bean(name = "sourceDataSource")
+	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.source")
-	public DataSource secondaryDataSource() {
+	public DataSource sourceDataSource() {
 		return DataSourceBuilder.create().build();
 	}
 	
-	@Bean(name = "sourceJdbcTemplate")
-	public JdbcTemplate secondaryJdbcTemplate(@Qualifier("sourceDataSource") DataSource ds) {
+	@Bean
+	public JdbcTemplate sourceJdbcTemplate(@Qualifier("sourceDataSource") DataSource ds) {
 		return new JdbcTemplate(ds);
+	}
+	
+	@Bean
+	@ConfigurationProperties(prefix = "spring.datasource.batch")
+	public DataSource batchDataSource() {
+		return DataSourceBuilder.create().build();
 	}
 	
 }
