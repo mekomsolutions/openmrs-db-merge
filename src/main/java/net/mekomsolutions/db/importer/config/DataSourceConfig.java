@@ -7,6 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.JdbcTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import liquibase.integration.spring.SpringLiquibase;
 
 public class DataSourceConfig {
 	
@@ -36,6 +40,21 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.batch")
 	public DataSource batchDataSource() {
 		return DataSourceBuilder.create().build();
+	}
+	
+	@Bean
+	public PlatformTransactionManager sourceTxManager(@Qualifier("batchDataSource") DataSource ds) {
+		return new JdbcTransactionManager(ds);
+	}
+	
+	@Bean
+	public SpringLiquibase springLiquibase(@Qualifier("batchDataSource") DataSource ds) {
+		SpringLiquibase liquibase = new SpringLiquibase();
+		liquibase.setDataSource(ds);
+		liquibase.setChangeLog("liquibase.xml");
+		liquibase.setDatabaseChangeLogTable("liquibase_changelog");
+		liquibase.setDatabaseChangeLogLockTable("liquibase_changelog_lock");
+		return liquibase;
 	}
 	
 }

@@ -15,6 +15,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <springBootVersion>3.5.11</springBootVersion>
         <mysqlConnectorVersion>8.2.0</mysqlConnectorVersion>
+        <liquibaseVersion>4.25.1</liquibaseVersion>
         <junitVersion>5.13.4</junitVersion>
         <mockitoJunitVersion>5.20.0</mockitoJunitVersion>
 
@@ -50,6 +51,11 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>${mysqlConnectorVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
+            <version>${liquibaseVersion}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
