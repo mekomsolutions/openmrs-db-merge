@@ -43,7 +43,7 @@ public class DataSourceConfig {
 	}
 	
 	@Bean
-	public PlatformTransactionManager sourceTxManager(@Qualifier("batchDataSource") DataSource ds) {
+	public PlatformTransactionManager batchTxManager(@Qualifier("batchDataSource") DataSource ds) {
 		return new JdbcTransactionManager(ds);
 	}
 	
