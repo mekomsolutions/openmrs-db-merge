@@ -2,7 +2,7 @@ package net.mekomsolutions.db.importer;
 
 import java.util.Map;
 
-public record Table(Map<String,Column>columns){
+public record Table(String name,Map<String,Column>columns){
 
 /**
  * Gets a Column object matching the specified name.

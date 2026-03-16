@@ -3,9 +3,10 @@ package net.mekomsolutions.db.importer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,8 +42,8 @@ public class MetadataExtractor {
 		
 		return jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
 			List<Column> columns = getColumns(table, c);
-			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::columnName, col -> col));
-			return new Table(nameColMap);
+			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));
+			return new Table(table, nameColMap);
 		});
 	}
 	
@@ -58,7 +59,8 @@ public class MetadataExtractor {
 	public List<Column> getColumns(String table, Connection connection) throws SQLException {
 		log.debug("Fetching column metadata for table: {}", table);
 		
-		List<Column> columnMetadataList = new ArrayList<>();
+		//We use a set because of a bug in the MySQL driver where it returns duplicate columns
+		Set<Column> columns = new HashSet<>();
 		Map<String, ForeignKey> colAndFkMap = getForeignKeyMetadata(table, connection).stream()
 		        .collect(Collectors.toMap(ForeignKey::columnName, fk -> fk));
 		
@@ -69,11 +71,11 @@ public class MetadataExtractor {
 				int columnSize = rs.getInt("COLUMN_SIZE");
 				boolean isNullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
 				ForeignKey fk = colAndFkMap.get(columnName);
-				columnMetadataList.add(new Column(columnName, columnType, isNullable, columnSize, fk));
+				columns.add(new Column(columnName, columnType, isNullable, columnSize, fk));
 			}
 		}
 		
-		return columnMetadataList;
+		return columns.stream().toList();
 	}
 	
 	/**
@@ -87,17 +89,19 @@ public class MetadataExtractor {
 	public List<ForeignKey> getForeignKeyMetadata(String table, Connection connection) throws SQLException {
 		log.info("Fetching foreign keys for table: {}", table);
 		
-		List<ForeignKey> foreignKeys = new ArrayList<>();
+		//We use a set because of a bug in the MySQL driver where it returns duplicate FKs
+		Set<ForeignKey> foreignKeys = new HashSet<>();
 		try (ResultSet rs = connection.getMetaData().getImportedKeys(null, db, table)) {
 			while (rs.next()) {
+				String name = rs.getString("FK_NAME");
 				String columnName = rs.getString("FKCOLUMN_NAME");
 				String referenceTable = rs.getString("PKTABLE_NAME");
 				String referencedColumn = rs.getString("PKCOLUMN_NAME");
-				foreignKeys.add(new ForeignKey(columnName, referenceTable, referencedColumn));
+				foreignKeys.add(new ForeignKey(name, columnName, referenceTable, referencedColumn));
 			}
 		}
 		
-		return foreignKeys;
+		return foreignKeys.stream().toList();
 	}
 	
 }
