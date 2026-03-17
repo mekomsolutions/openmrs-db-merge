@@ -1,7 +1,9 @@
 package net.mekomsolutions.db.importer;
 
+import java.time.LocalDateTime;
+
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -23,7 +25,8 @@ public class StartupListener {
 	@EventListener(classes = { ContextRefreshedEvent.class })
 	public void contextRefreshed() throws Exception {
 		log.info("Starting the import job to sync tables");
-		jobLauncher.run(job, new JobParameters());
+		JobParametersBuilder builder = new JobParametersBuilder().addLocalDateTime("timestamp", LocalDateTime.now());
+		jobLauncher.run(job, builder.toJobParameters());
 	}
 	
 }
