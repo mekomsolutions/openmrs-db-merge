@@ -41,9 +41,15 @@ public class MetadataExtractor {
 		log.info("Fetching metadata for table: {}", table);
 		
 		return jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
+			List<String> keys = getPrimaryKeys(table, c);
+			if (keys.size() != 0) {
+				//TODO Add support for these tables
+				throw new RuntimeException("Table " + table + " has unsupported primary key count " + keys.size());
+			}
+			
 			List<Column> columns = getColumns(table, c);
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));
-			return new Table(table, nameColMap);
+			return new Table(table, keys, nameColMap);
 		});
 	}
 	
@@ -76,6 +82,28 @@ public class MetadataExtractor {
 		}
 		
 		return columns.stream().toList();
+	}
+	
+	/**
+	 * Retrieves metadata information about the primary keys of a table.
+	 *
+	 * @param table The name of the table to fetch primary key information for.
+	 * @param connection The Connection object.
+	 * @return A List of Column objects representing the primary key columns.
+	 * @throws SQLException if a database access error occurs.
+	 */
+	public List<String> getPrimaryKeys(String table, Connection connection) throws SQLException {
+		log.info("Fetching primary keys for table: {}", table);
+		
+		//We use a set because of a bug in the MySQL driver where it returns duplicate primary keys
+		Set<String> primaryKeys = new HashSet<>();
+		try (ResultSet rs = connection.getMetaData().getPrimaryKeys(null, db, table)) {
+			while (rs.next()) {
+				primaryKeys.add(rs.getString("COLUMN_NAME"));
+			}
+		}
+		
+		return primaryKeys.stream().toList();
 	}
 	
 	/**

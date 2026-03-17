@@ -109,6 +109,11 @@
                         <includes>
                             <include>**/*.java</include>
                         </includes>
+                        <excludes>
+                            <exclude>**/**/Table.java</exclude>
+                            <exclude>**/**/Column.java</exclude>
+                            <exclude>**/**/ForeignKey.java</exclude>
+                        </excludes>
                     </configuration>
                     <executions>
                         <execution>
