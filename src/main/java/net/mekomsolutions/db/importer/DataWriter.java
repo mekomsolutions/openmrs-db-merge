@@ -30,7 +30,7 @@ public class DataWriter extends DataAccessor {
 	 */
 	public int[] insertBatch(String table, List<String> columnNames, List<Object[]> rows) {
 		if (log.isDebugEnabled()) {
-			log.info("Inserting {} rows into table {}", rows.size(), table);
+			log.debug("Inserting {} rows into table {}", rows.size(), table);
 		}
 		
 		String columns = String.join(",", columnNames);
@@ -51,7 +51,7 @@ public class DataWriter extends DataAccessor {
 	 */
 	public int[] updateBatch(String table, List<String> columnNames, List<Object[]> rows) {
 		if (log.isDebugEnabled()) {
-			log.info("Updating {} rows into table {}", rows.size(), table);
+			log.debug("Updating {} rows into table {}", rows.size(), table);
 		}
 		
 		String columns = String.join(",", columnNames);

@@ -3,14 +3,12 @@ package net.mekomsolutions.db.importer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -22,9 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 public class MetadataExtractor {
 	
 	private JdbcTemplate jdbcTemplate;
-	
-	@Value("${source.database}")
-	private String db;
 	
 	public MetadataExtractor(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -38,18 +33,28 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public Table getTable(String table) {
-		log.info("Fetching metadata for table: {}", table);
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching metadata for table: {}", table);
+		}
 		
 		return jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
 			List<String> keys = getPrimaryKeys(table, c);
-			if (keys.size() != 0) {
+			if (keys.size() != 1) {
 				//TODO Add support for these tables
 				throw new RuntimeException("Table " + table + " has unsupported primary key count " + keys.size());
 			}
 			
 			List<Column> columns = getColumns(table, c);
+			List<String> columnNames = columns.stream().map(col -> col.name()).toList();
+			List<String> insertColumns = columnNames;
+			//If we have multiple PKs, it a mapping key so they are most likely not auto generated.
+			if (keys.size() == 1) {
+				//TODO Fail if a primary key is not auto generated otherwise we can't guarantee uniqueness
+				insertColumns = columnNames.stream().filter(col -> !keys.contains(col)).toList();
+			}
+			
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));
-			return new Table(table, keys, nameColMap);
+			return new Table(table, keys, columnNames, insertColumns, nameColMap);
 		});
 	}
 	
@@ -58,19 +63,20 @@ public class MetadataExtractor {
 	 * nullability and foreign keys.
 	 *
 	 * @param table The name of the table to fetch metadata for.
-	 * @param connection The Connection object.
+	 * @param con The Connection object.
 	 * @return A List of ColumnMetadata objects containing column metadata.
 	 * @throws SQLException if a database access error occurs.
 	 */
-	public List<Column> getColumns(String table, Connection connection) throws SQLException {
-		log.debug("Fetching column metadata for table: {}", table);
+	public List<Column> getColumns(String table, Connection con) throws SQLException {
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching column metadata for table: {}", table);
+		}
 		
-		//We use a set because of a bug in the MySQL driver where it returns duplicate columns
-		Set<Column> columns = new HashSet<>();
-		Map<String, ForeignKey> colAndFkMap = getForeignKeyMetadata(table, connection).stream()
+		List<Column> columns = new ArrayList<>();
+		Map<String, ForeignKey> colAndFkMap = getForeignKeyMetadata(table, con).stream()
 		        .collect(Collectors.toMap(ForeignKey::columnName, fk -> fk));
 		
-		try (ResultSet rs = connection.getMetaData().getColumns(null, db, table, null)) {
+		try (ResultSet rs = con.getMetaData().getColumns(con.getCatalog(), con.getSchema(), table, null)) {
 			while (rs.next()) {
 				String columnName = rs.getString("COLUMN_NAME");
 				String columnType = rs.getString("TYPE_NAME");
@@ -81,7 +87,7 @@ public class MetadataExtractor {
 			}
 		}
 		
-		return columns.stream().toList();
+		return columns;
 	}
 	
 	/**
@@ -93,17 +99,19 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public List<String> getPrimaryKeys(String table, Connection connection) throws SQLException {
-		log.info("Fetching primary keys for table: {}", table);
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching primary keys for table: {}", table);
+		}
 		
-		//We use a set because of a bug in the MySQL driver where it returns duplicate primary keys
-		Set<String> primaryKeys = new HashSet<>();
-		try (ResultSet rs = connection.getMetaData().getPrimaryKeys(null, db, table)) {
+		List<String> primaryKeys = new ArrayList<>();
+		try (ResultSet rs = connection.getMetaData().getPrimaryKeys(connection.getCatalog(), connection.getSchema(),
+		    table)) {
 			while (rs.next()) {
 				primaryKeys.add(rs.getString("COLUMN_NAME"));
 			}
 		}
 		
-		return primaryKeys.stream().toList();
+		return primaryKeys;
 	}
 	
 	/**
@@ -115,11 +123,13 @@ public class MetadataExtractor {
 	 * @throws SQLException if a database access error occurs.
 	 */
 	public List<ForeignKey> getForeignKeyMetadata(String table, Connection connection) throws SQLException {
-		log.info("Fetching foreign keys for table: {}", table);
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching foreign keys for table: {}", table);
+		}
 		
-		//We use a set because of a bug in the MySQL driver where it returns duplicate FKs
-		Set<ForeignKey> foreignKeys = new HashSet<>();
-		try (ResultSet rs = connection.getMetaData().getImportedKeys(null, db, table)) {
+		List<ForeignKey> foreignKeys = new ArrayList<>();
+		try (ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(),
+		    table)) {
 			while (rs.next()) {
 				String name = rs.getString("FK_NAME");
 				String columnName = rs.getString("FKCOLUMN_NAME");
@@ -129,7 +139,7 @@ public class MetadataExtractor {
 			}
 		}
 		
-		return foreignKeys.stream().toList();
+		return foreignKeys;
 	}
 	
 }

@@ -3,7 +3,8 @@ package net.mekomsolutions.db.importer;
 import java.util.List;
 import java.util.Map;
 
-public record Table(String name, List<String> primaryKeys, Map<String, Column> columns) {
+public record Table(String name, List<String> primaryKeys, List<String> columnNames, List<String> insertColumnNames,
+        Map<String, Column> columns) {
 	
 	/**
 	 * Gets a Column object matching the specified name.
