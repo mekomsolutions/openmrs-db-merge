@@ -62,10 +62,11 @@ public class StepFactory {
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
-	                               ArrayPreparedStatementParamSetter prepStatementParamSetter) {
+	                               ArrayPreparedStatementParamSetter prepStatementParamSetter,
+	                               ForeignKeyMappingFunction foreignKeyMapper) {
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
-		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table);
+		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, foreignKeyMapper);
 		ItemWriter<Object[]> writer = createWriter(table, prepStatementParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Object[]> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, txManager);
@@ -109,7 +110,8 @@ public class StepFactory {
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor,
-	                           ArrayPreparedStatementParamSetter prepStatementParamSetter)
+	                           ArrayPreparedStatementParamSetter prepStatementParamSetter,
+	                           ForeignKeyMappingFunction foreignKeyMapper)
 	    throws IOException {
 		log.info("Importing sync tables defined in file {}", tablesFile);
 		
@@ -117,7 +119,7 @@ public class StepFactory {
 		String line;
 		List<Step> steps = new ArrayList<>();
 		while ((line = br.readLine()) != null) {
-			steps.add(createTableStep(line.trim(), metadataExtractor, prepStatementParamSetter));
+			steps.add(createTableStep(line.trim(), metadataExtractor, prepStatementParamSetter, foreignKeyMapper));
 		}
 		
 		return steps;

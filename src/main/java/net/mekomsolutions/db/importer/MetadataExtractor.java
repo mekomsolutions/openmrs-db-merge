@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,9 @@ public class MetadataExtractor {
 	
 	private JdbcTemplate jdbcTemplate;
 	
+	// Cache to store table name to Table object mappings
+	private final Map<String, Table> NAME_AND_TABLE_CACHE = new ConcurrentHashMap<>();
+	
 	public MetadataExtractor(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
@@ -28,23 +32,31 @@ public class MetadataExtractor {
 	/**
 	 * Gets metadata information for a table and creates a Table object containing the information.
 	 *
-	 * @param table The name of the table to fetch metadata for.
+	 * @param tableName The name of the table to fetch metadata for.
 	 * @return A Table object containing the metadata of the specified table.
 	 * @throws SQLException if a database access error occurs.
 	 */
-	public Table getTable(String table) {
+	public Table getTable(String tableName) {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching metadata for table: {}", table);
+			log.debug("Fetching metadata for table: {}", tableName);
 		}
 		
-		return jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
-			List<String> keys = getPrimaryKeys(table, c);
-			if (keys.size() != 1) {
-				//TODO Add support for these tables
-				throw new RuntimeException("Table " + table + " has unsupported primary key count " + keys.size());
+		if (NAME_AND_TABLE_CACHE.containsKey(tableName)) {
+			if (log.isDebugEnabled()) {
+				log.debug("Returning cached metadata for table: {}", tableName);
 			}
 			
-			List<Column> columns = getColumns(table, c);
+			return NAME_AND_TABLE_CACHE.get(tableName);
+		}
+		
+		Table table = jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
+			List<String> keys = getPrimaryKeys(tableName, c);
+			if (keys.size() != 1) {
+				//TODO Add support for these tables
+				throw new RuntimeException("Table " + tableName + " has unsupported primary key count " + keys.size());
+			}
+			
+			List<Column> columns = getColumns(tableName, c);
 			List<String> columnNames = columns.stream().map(col -> col.name()).toList();
 			List<String> insertColumns = columnNames;
 			//If we have multiple PKs, it a mapping key so they are most likely not auto generated.
@@ -54,8 +66,16 @@ public class MetadataExtractor {
 			}
 			
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));
-			return new Table(table, keys, columnNames, insertColumns, nameColMap);
+			if (nameColMap.keySet().contains("uuid")) {
+				//TODO Add support for these tables
+				throw new RuntimeException("Table " + tableName + " has no uuid column");
+			}
+			
+			return new Table(tableName, keys, columnNames, insertColumns, nameColMap);
 		});
+		
+		NAME_AND_TABLE_CACHE.put(tableName, table);
+		return table;
 	}
 	
 	/**
