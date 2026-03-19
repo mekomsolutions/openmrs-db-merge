@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.ArrayPreparedStatementParamSetter;
-import net.mekomsolutions.db.importer.ForeignKeyMappingFunction;
+import net.mekomsolutions.db.importer.ForeignKeyMapper;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.StepFactory;
 
@@ -35,8 +35,7 @@ public class BatchConfig {
 	
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
-	                     ArrayPreparedStatementParamSetter prepStatementParamSetter,
-	                     ForeignKeyMappingFunction foreignKeyMapper)
+	                     ArrayPreparedStatementParamSetter prepStatementParamSetter, ForeignKeyMapper foreignKeyMapper)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder("importJob", jobRepository).preventRestart();

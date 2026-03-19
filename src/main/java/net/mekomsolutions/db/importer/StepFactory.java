@@ -63,7 +63,7 @@ public class StepFactory {
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
 	                               ArrayPreparedStatementParamSetter prepStatementParamSetter,
-	                               ForeignKeyMappingFunction foreignKeyMapper) {
+	                               ForeignKeyMapper foreignKeyMapper) {
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
 		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, foreignKeyMapper);
@@ -110,8 +110,7 @@ public class StepFactory {
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor,
-	                           ArrayPreparedStatementParamSetter prepStatementParamSetter,
-	                           ForeignKeyMappingFunction foreignKeyMapper)
+	                           ArrayPreparedStatementParamSetter prepStatementParamSetter, ForeignKeyMapper foreignKeyMapper)
 	    throws IOException {
 		log.info("Importing sync tables defined in file {}", tablesFile);
 		

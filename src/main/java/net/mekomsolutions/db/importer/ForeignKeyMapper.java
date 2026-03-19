@@ -8,13 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
-public class ForeignKeyMappingFunction implements BiFunction<Object, ForeignKey, Object> {
+public class ForeignKeyMapper implements BiFunction<Object, ForeignKey, Object> {
 	
 	private SourceDbHelper sourceDbHelper;
 	
 	private SinkDbHelper sinkDbHelper;
 	
-	public ForeignKeyMappingFunction(SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper) {
+	public ForeignKeyMapper(SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper) {
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
 	}

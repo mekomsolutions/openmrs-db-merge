@@ -66,7 +66,7 @@ public class MetadataExtractor {
 			}
 			
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));
-			if (nameColMap.keySet().contains("uuid")) {
+			if (!nameColMap.keySet().contains("uuid")) {
 				//TODO Add support for these tables
 				throw new RuntimeException("Table " + tableName + " has no uuid column");
 			}

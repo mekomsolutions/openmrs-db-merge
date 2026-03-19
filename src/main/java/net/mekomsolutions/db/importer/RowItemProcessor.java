@@ -14,9 +14,9 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	
 	private Table table;
 	
-	private ForeignKeyMappingFunction foreignKeyMapper;
+	private ForeignKeyMapper foreignKeyMapper;
 	
-	public RowItemProcessor(Table table, ForeignKeyMappingFunction foreignKeyMapper) {
+	public RowItemProcessor(Table table, ForeignKeyMapper foreignKeyMapper) {
 		this.table = table;
 		this.foreignKeyMapper = foreignKeyMapper;
 	}
@@ -47,8 +47,8 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				if (fk != null) {
 					final String refTableName = fk.referenceTable();
 					if (log.isDebugEnabled()) {
-						log.debug("Resolving the row in {} table {} referenced by foreign key {}.{}", refTableName,
-						    table.name(), fk.columnName());
+						log.debug("Resolving the row in the {} table referenced by {}.{}", refTableName, table.name(),
+						    fk.columnName());
 					}
 					
 					value = foreignKeyMapper.apply(value, fk);

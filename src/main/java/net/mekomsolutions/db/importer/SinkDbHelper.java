@@ -32,7 +32,7 @@ public class SinkDbHelper {
 	 */
 	public Object getColumnValue(String table, String columName, String filterColumnName, Object filterColumnValue) {
 		if (log.isDebugEnabled()) {
-			log.debug("Getting {} for row with {} = {} from table {}", columName, filterColumnName, filterColumnValue,
+			log.debug("Getting {} for row with {} = {} from sink table {}", columName, filterColumnName, filterColumnValue,
 			    table);
 		}
 		
@@ -41,8 +41,8 @@ public class SinkDbHelper {
 			return jdbcTemplate.queryForObject(query, new Object[] { filterColumnValue }, Object.class);
 		}
 		catch (Exception e) {
-			final String message = "Failed to get " + columName + " for row with " + filterColumnName + " "
-			        + filterColumnValue + " from table " + table;
+			final String message = "Failed to get " + columName + " value for row with " + filterColumnName + " "
+			        + filterColumnValue + " from sink table " + table;
 			throw new RuntimeException(message, e);
 		}
 	}

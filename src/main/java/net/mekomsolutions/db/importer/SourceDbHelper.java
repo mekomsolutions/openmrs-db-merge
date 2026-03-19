@@ -29,7 +29,7 @@ public class SourceDbHelper {
 	 */
 	public Object getUuid(String table, Object idColumName, Object id) {
 		if (log.isDebugEnabled()) {
-			log.debug("Getting uuid for row with {} = {} from table {}", idColumName, id, table);
+			log.debug("Getting uuid for row with {} = {} from source table {}", idColumName, id, table);
 		}
 		
 		String query = String.format("SELECT uuid FROM %s WHERE %s = ?", table, idColumName);
@@ -37,7 +37,7 @@ public class SourceDbHelper {
 			return jdbcTemplate.queryForObject(query, new Object[] { id }, Object.class);
 		}
 		catch (Exception e) {
-			final String msg = "Failed to get uuid for row with " + idColumName + " " + id + " in table " + table;
+			String msg = "Failed to get uuid for row with " + idColumName + " " + id + " from source table " + table;
 			throw new RuntimeException(msg, e);
 		}
 	}
