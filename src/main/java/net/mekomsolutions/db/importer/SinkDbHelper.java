@@ -1,7 +1,13 @@
 package net.mekomsolutions.db.importer;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +50,51 @@ public class SinkDbHelper {
 			final String message = "Failed to get " + columName + " value for row with " + filterColumnName + " "
 			        + filterColumnValue + " from sink table " + table;
 			throw new RuntimeException(message, e);
+		}
+	}
+	
+	/**
+	 * Inserts a single row into the specified database table.
+	 *
+	 * @param table the name of the database table where the row will be inserted.
+	 * @param columnNames a list of column names that correspond to the table's structure.
+	 * @param values an array of objects representing the values for the corresponding columns.
+	 * @return the number of rows affected by the insert operation.
+	 */
+	public Object insertRow(String table, List<String> columnNames, Object[] values) {
+		if (log.isDebugEnabled()) {
+			log.debug("Inserting a row into table {}", table);
+		}
+		
+		String columns = String.join(",", columnNames);
+		String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
+		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columns, placeholders);
+		
+		try {
+			PreparedStatementCreatorFactory pscFactory = new PreparedStatementCreatorFactory(sql);
+			pscFactory.setReturnGeneratedKeys(true);
+			KeyHolder keyHolder = new GeneratedKeyHolder();
+			int insertCount = jdbcTemplate.update(pscFactory.newPreparedStatementCreator(values), keyHolder);
+			if (insertCount != 1) {
+				throw new RuntimeException("Invalid insert count " + insertCount);
+			}
+			
+			if (keyHolder.getKey() == null) {
+				throw new RuntimeException("No auto generated key found after insert");
+			} else if (keyHolder.getKeys().size() != 1) {
+				throw new RuntimeException("Invalid auto generated key count after insert " + keyHolder.getKeys().size());
+			}
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Successfully inserted {} row into table {}: {}", insertCount, table);
+			}
+			
+			return keyHolder.getKey();
+		}
+		catch (Exception e) {
+			final String msg = String.format("Error occurred while inserting a row into table %s: %s", table,
+			    e.getMessage());
+			throw new RuntimeException(msg, e);
 		}
 	}
 	

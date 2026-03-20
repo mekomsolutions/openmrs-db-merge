@@ -4,7 +4,7 @@ import java.sql.Types;
 
 public class DbUtils {
 	
-	protected static Object generateValue(Column column) {
+	protected static Object getPlaceHolder(Column column) {
 		int type = column.sqlType();
 		Object value;
 		if (Types.VARCHAR == type) {
@@ -22,7 +22,7 @@ public class DbUtils {
 		} else if (Types.TIMESTAMP == type) {
 			value = Constants.EPOCH;
 		} else {
-			throw new RuntimeException("Don't know how to generate value for column of sql type: " + type);
+			throw new RuntimeException("Don't know how to generate placeholder value for column of sql type: " + type);
 		}
 		
 		return value;
