@@ -1,6 +1,6 @@
 package net.mekomsolutions.db.importer;
 
-public record Column(String name, String columnType, boolean isNullable, int columnSize, ForeignKey foreignKey) {
+public record Column(String name, int sqlType, boolean nullable, int size, ForeignKey foreignKey) {
 	
 	@Override
 	public boolean equals(Object object) {

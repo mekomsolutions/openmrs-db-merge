@@ -98,12 +98,12 @@ public class MetadataExtractor {
 		
 		try (ResultSet rs = con.getMetaData().getColumns(con.getCatalog(), con.getSchema(), table, null)) {
 			while (rs.next()) {
-				String columnName = rs.getString("COLUMN_NAME");
-				String columnType = rs.getString("TYPE_NAME");
-				int columnSize = rs.getInt("COLUMN_SIZE");
+				String name = rs.getString("COLUMN_NAME");
+				int sqlType = rs.getInt("DATA_TYPE");
+				int size = rs.getInt("COLUMN_SIZE");
 				boolean isNullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
-				ForeignKey fk = colAndFkMap.get(columnName);
-				columns.add(new Column(columnName, columnType, isNullable, columnSize, fk));
+				ForeignKey fk = colAndFkMap.get(name);
+				columns.add(new Column(name, sqlType, isNullable, size, fk));
 			}
 		}
 		

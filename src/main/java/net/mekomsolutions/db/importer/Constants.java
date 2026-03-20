@@ -1,0 +1,21 @@
+package net.mekomsolutions.db.importer;
+
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+
+public class Constants {
+	
+	public static final Date EPOCH_DATE = Date.valueOf(LocalDate.of(1970, Month.JANUARY, 1));
+	
+	public static final Timestamp EPOCH = Timestamp.valueOf(LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0, 0));
+	
+	public static final Time MIDNIGHT = Time.valueOf(LocalTime.MIDNIGHT);
+	
+	public static final String PH_STRING = "PLACEHOLDER";
+	
+}

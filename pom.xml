@@ -16,8 +16,6 @@
         <springBootVersion>3.5.11</springBootVersion>
         <mysqlConnectorVersion>8.2.0</mysqlConnectorVersion>
         <liquibaseVersion>4.25.1</liquibaseVersion>
-        <junitVersion>5.13.4</junitVersion>
-        <mockitoJunitVersion>5.20.0</mockitoJunitVersion>
 
         <!-- Other tools -->
         <lombokVersion>1.18.30</lombokVersion>
@@ -66,16 +64,8 @@
 
         <!--Test dependencies -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junitVersion}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockitoJunitVersion}</version>
-            <scope>test</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
     </dependencies>
 
