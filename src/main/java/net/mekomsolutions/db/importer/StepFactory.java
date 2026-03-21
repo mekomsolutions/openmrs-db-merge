@@ -62,14 +62,14 @@ public class StepFactory {
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
-	                               ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
+	                               ArrayPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper,
 	                               SinkDbHelper sinkDbHelper) {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
 		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, metadataExtractor,
 		        sourceDbHelper, sinkDbHelper);
-		ItemWriter<Object[]> writer = createWriter(table, prepStatementParamSetter);
+		ItemWriter<Object[]> writer = createWriter(table, prepStmtParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Object[]> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, txManager);
 		return builder.reader(reader).processor(processor).writer(writer).build();
@@ -93,13 +93,13 @@ public class StepFactory {
 		return reader;
 	}
 	
-	protected ItemWriter<Object[]> createWriter(Table table, ArrayPreparedStatementParamSetter prepStatementParamSetter) {
+	protected ItemWriter<Object[]> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
 		String columns = String.join(",", table.insertColumnNames());
 		String placeholders = table.insertColumnNames().stream().map(c -> "?").collect(Collectors.joining(","));
 		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table.name(), columns, placeholders);
 		JdbcBatchItemWriter<Object[]> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
-		        .itemPreparedStatementSetter(prepStatementParamSetter).build();
+		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
 		
 		try {
 			writer.afterPropertiesSet();
@@ -111,9 +111,8 @@ public class StepFactory {
 		return writer;
 	}
 	
-	public List<Step> getSteps(MetadataExtractor metadataExtractor,
-	                           ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
-	                           SinkDbHelper sinkDbHelper)
+	public List<Step> getSteps(MetadataExtractor metadataExtractor, ArrayPreparedStatementParamSetter prepStmtParamSetter,
+	                           SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper)
 	    throws IOException {
 		
 		log.info("Importing sync tables defined in file {}", tablesFile);
@@ -122,8 +121,9 @@ public class StepFactory {
 		String line;
 		List<Step> steps = new ArrayList<>();
 		while ((line = br.readLine()) != null) {
-			steps.add(
-			    createTableStep(line.trim(), metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper));
+			final Step step = createTableStep(line.trim(), metadataExtractor, prepStmtParamSetter, sourceDbHelper,
+			    sinkDbHelper);
+			steps.add(step);
 		}
 		
 		return steps;
