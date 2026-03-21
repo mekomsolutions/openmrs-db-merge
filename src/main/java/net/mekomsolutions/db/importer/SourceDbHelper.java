@@ -1,6 +1,9 @@
 package net.mekomsolutions.db.importer;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -42,4 +45,29 @@ public class SourceDbHelper {
 		}
 	}
 	
+	/**
+	 * Retrieves a single row from a database table that matches the specified column value.
+	 *
+	 * @param table the name of the database table to query
+	 * @param columnName the name of the column to match the value against
+	 * @param columnValue the value to match in the specified column
+	 * @return a map representing the row if found otherwise or null
+	 */
+	public Map<String, Object> getRow(String table, String columnName, Object columnValue) {
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching row from table {} where {} = {}", table, columnName, columnValue);
+		}
+		
+		String query = String.format("SELECT * FROM %s WHERE %s = ?", table, columnName);
+		try {
+			return jdbcTemplate.queryForMap(query, columnValue);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+		catch (Exception e) {
+			String msg = "Failed to fetch row from table " + table + " where " + columnName + " = " + columnValue;
+			throw new RuntimeException(msg, e);
+		}
+	}
 }

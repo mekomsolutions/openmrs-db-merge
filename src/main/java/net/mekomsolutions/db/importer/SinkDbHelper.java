@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -45,6 +46,9 @@ public class SinkDbHelper {
 		String query = String.format("SELECT %s FROM %s WHERE %s = ?", columName, table, filterColumnName);
 		try {
 			return jdbcTemplate.queryForObject(query, new Object[] { filterColumnValue }, Object.class);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return null;
 		}
 		catch (Exception e) {
 			final String message = "Failed to get " + columName + " value for row with " + filterColumnName + " "

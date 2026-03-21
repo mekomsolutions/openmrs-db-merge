@@ -62,11 +62,13 @@ public class StepFactory {
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
-	                               ArrayPreparedStatementParamSetter prepStatementParamSetter,
-	                               ForeignKeyMapper foreignKeyMapper) {
+	                               ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
+	                               SinkDbHelper sinkDbHelper) {
+		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
-		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, foreignKeyMapper);
+		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, metadataExtractor,
+		        sourceDbHelper, sinkDbHelper);
 		ItemWriter<Object[]> writer = createWriter(table, prepStatementParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Object[]> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, txManager);
@@ -110,15 +112,18 @@ public class StepFactory {
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor,
-	                           ArrayPreparedStatementParamSetter prepStatementParamSetter, ForeignKeyMapper foreignKeyMapper)
+	                           ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
+	                           SinkDbHelper sinkDbHelper)
 	    throws IOException {
+		
 		log.info("Importing sync tables defined in file {}", tablesFile);
 		
 		BufferedReader br = new BufferedReader(new FileReader(tablesFile));
 		String line;
 		List<Step> steps = new ArrayList<>();
 		while ((line = br.readLine()) != null) {
-			steps.add(createTableStep(line.trim(), metadataExtractor, prepStatementParamSetter, foreignKeyMapper));
+			steps.add(
+			    createTableStep(line.trim(), metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper));
 		}
 		
 		return steps;

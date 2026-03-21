@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -147,7 +149,8 @@ public class MetadataExtractor {
 			log.debug("Fetching foreign keys for table: {}", table);
 		}
 		
-		List<ForeignKey> foreignKeys = new ArrayList<>();
+		//We use a set because of a bug in the MySQL driver where it returns duplicate FKs
+		Set<ForeignKey> foreignKeys = new HashSet<>();
 		try (ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(),
 		    table)) {
 			while (rs.next()) {
@@ -159,7 +162,7 @@ public class MetadataExtractor {
 			}
 		}
 		
-		return foreignKeys;
+		return foreignKeys.stream().toList();
 	}
 	
 }

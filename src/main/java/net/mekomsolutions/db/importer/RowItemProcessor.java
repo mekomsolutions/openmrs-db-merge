@@ -1,6 +1,5 @@
 package net.mekomsolutions.db.importer;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -13,37 +12,54 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Object[]> {
 	
-	private Table table;
+	private Table baseTable;
 	
-	private ForeignKeyMapper foreignKeyMapper;
-	
-	private List<Column> requiredColumns;
+	private MetadataExtractor metadataExtractor;
 	
 	private SourceDbHelper sourceDbHelper;
 	
 	private SinkDbHelper sinkDbHelper;
 	
-	public RowItemProcessor(Table table, ForeignKeyMapper foreignKeyMapper) {
-		this.table = table;
-		this.foreignKeyMapper = foreignKeyMapper;
+	public RowItemProcessor(Table baseTable, MetadataExtractor metadataExtractor, SourceDbHelper sourceDbHelper,
+	    SinkDbHelper sinkDbHelper) {
+		this.baseTable = baseTable;
+		this.metadataExtractor = metadataExtractor;
+		this.sourceDbHelper = sourceDbHelper;
+		this.sinkDbHelper = sinkDbHelper;
 	}
 	
 	@BeforeStep
 	public void beforeStep(StepExecution stepExecution) {
 		if (log.isDebugEnabled()) {
-			log.debug("Processing table: {}", table.name());
+			log.debug("Processing table: {}", baseTable.name());
 		}
 	}
 	
 	@Override
 	public Object[] process(Map<String, Object> item) throws Exception {
 		//TODO If an item exists in the sink DB, may be update it, but where did it come from?
-		final String pk = item.entrySet().stream().filter(e -> table.primaryKeys().contains(e.getKey()))
+		final String pk = item.entrySet().stream().filter(e -> baseTable.primaryKeys().contains(e.getKey()))
 		        .map(e -> e.getValue().toString()).collect(Collectors.joining(","));
 		if (log.isDebugEnabled()) {
 			log.debug("Processing: {}", pk);
 		}
 		
+		return createColumnValues(baseTable, item);
+	}
+	
+	/**
+	 * Creates an array of column values to insert into the specified table based on the row data
+	 * provided in the map. Each column value is resolved and populated by processing the foreign key
+	 * relationships, if applicable, and handling references between tables. This is achieved because
+	 * the method recursively calls itself to create column values for any missing referenced rows
+	 * missing that needs to be inserted into the sink database.
+	 *
+	 * @param table the table whose column values are to be created
+	 * @param item a map containing key-value pairs where the key is the column name and the value is
+	 *            the associated data
+	 * @return an array of objects representing the resolved column values
+	 */
+	protected Object[] createColumnValues(Table table, Map<String, Object> item) {
 		Object[] values = new Object[table.insertColumnNames().size()];
 		for (int i = 0; i < table.insertColumnNames().size(); i++) {
 			final String columnName = table.insertColumnNames().get(i);
@@ -58,9 +74,18 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 						    fk.columnName());
 					}
 					
-					value = foreignKeyMapper.apply(value, fk);
+					Map<String, Object> refRow = sourceDbHelper.getRow(refTableName, fk.referencedColumn(), value);
+					if (refRow != null) {
+						Object refUuid = refRow.get("uuid");
+						if (refUuid != null) {
+							//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
+							//repeatedly reference the same row
+							//value = sinkDbHelper.getColumnValue(refTableName, fk.referencedColumn(), "uuid", refUuid);
+						}
+					}
+					
 					if (value == null) {
-						//TODO Create Placeholder
+						//value = insertReferencedRow(fk, refRow);
 					}
 				}
 			}
@@ -71,34 +96,16 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 		return values;
 	}
 	
-	protected Object insertPlaceholderRow(String tableName, Table table) {
-		return sinkDbHelper.insertRow(tableName, requiredColumns.stream().map(Column::name).toList(),
-		    createPlaceholderRow(table));
-	}
-	
-	protected Object[] createPlaceholderRow(Table table) {
-		if (requiredColumns == null) {
-			//TODO Skip auto generated columns e.g. primary key
-			requiredColumns = table.columns().values().stream()
-			        .filter(c -> !table.primaryKeys().contains(c.name()) && !c.nullable()).toList();
+	protected Object insertReferencedRow(ForeignKey fk, Map<String, Object> row) {
+		final String refTableName = fk.referenceTable();
+		if (log.isDebugEnabled()) {
+			final String baseColName = fk.columnName();
+			log.debug("Inserting a row into table {} referenced by {}.{}", refTableName, baseTable.name(), baseColName);
 		}
 		
-		Object[] values = new Object[requiredColumns.size()];
-		int index = 0;
-		for (Column col : requiredColumns) {
-			Object value;
-			ForeignKey fk = col.foreignKey();
-			if (fk == null) {
-				value = DbUtils.getPlaceHolder(col);
-			} else {
-				value = null;
-			}
-			
-			values[index] = value;
-			index++;
-		}
-		
-		return values;
+		Table refTable = metadataExtractor.getTable(refTableName);
+		Object[] refColumnValues = createColumnValues(refTable, row);
+		return sinkDbHelper.insertRow(refTableName, refTable.insertColumnNames(), refColumnValues);
 	}
 	
 }

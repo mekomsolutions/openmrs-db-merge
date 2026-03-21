@@ -17,8 +17,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.ArrayPreparedStatementParamSetter;
-import net.mekomsolutions.db.importer.ForeignKeyMapper;
 import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.SinkDbHelper;
+import net.mekomsolutions.db.importer.SourceDbHelper;
 import net.mekomsolutions.db.importer.StepFactory;
 
 @EnableBatchProcessing(dataSourceRef = "batchDataSource", transactionManagerRef = "batchTxManager")
@@ -35,11 +36,12 @@ public class BatchConfig {
 	
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
-	                     ArrayPreparedStatementParamSetter prepStatementParamSetter, ForeignKeyMapper foreignKeyMapper)
+	                     ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
+	                     SinkDbHelper sinkDbHelper)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder("importJob", jobRepository).preventRestart();
-		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, foreignKeyMapper);
+		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper);
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {
 			if (builder == null) {
