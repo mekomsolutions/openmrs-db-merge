@@ -70,23 +70,37 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				if (fk != null) {
 					final String refTableName = fk.referenceTable();
 					if (log.isDebugEnabled()) {
-						log.debug("Resolving the row in the {} table referenced by {}.{}", refTableName, table.name(),
+						log.debug("Getting the row in the {} source table referenced by {}.{}", refTableName, table.name(),
 						    fk.columnName());
 					}
 					
-					Map<String, Object> refRow = sourceDbHelper.getRow(refTableName, fk.referencedColumn(), value);
-					if (refRow != null) {
-						Object refUuid = refRow.get("uuid");
-						if (refUuid != null) {
-							//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
-							//repeatedly reference the same row
-							//value = sinkDbHelper.getColumnValue(refTableName, fk.referencedColumn(), "uuid", refUuid);
-						}
+					final String refColName = fk.referencedColumn();
+					Map<String, Object> refRow = sourceDbHelper.getRow(refTableName, refColName, value);
+					if (refRow == null) {
+						String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
+						    refTableName, refColName, value);
+						throw new RuntimeException(msg);
 					}
 					
-					if (value == null) {
-						//value = insertReferencedRow(fk, refRow);
+					if (!refRow.containsKey("uuid")) {
+						throw new RuntimeException(String.format("Source table %s has no uuid column", refTableName));
 					}
+					
+					Object refUuid = refRow.get("uuid");
+					if (refUuid == null) {
+						String msg = String.format("No uuid found for referenced row in source table %s with %s = %s",
+						    refTableName, refColName, value);
+						throw new RuntimeException(msg);
+					}
+					
+					//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
+					//repeatedly reference the same row
+					Object sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "uuid", refUuid);
+					if (sinkValue == null) {
+						sinkValue = insertReferencedRow(fk, refRow);
+					}
+					
+					value = sinkValue;
 				}
 			}
 			
