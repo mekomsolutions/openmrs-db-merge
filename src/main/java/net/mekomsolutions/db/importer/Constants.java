@@ -16,6 +16,12 @@ public class Constants {
 	
 	public static final Time MIDNIGHT = Time.valueOf(LocalTime.MIDNIGHT);
 	
-	public static final String PH_STRING = "PLACEHOLDER";
+	public static final String TEMP_STRING = "[TEMP_STRING]";
+	
+	public static final String TEMP_CHAR = "#";
+	
+	public static final String PHANTOM_UUID = "[PHANTOM_UUID]";
+	
+	public static final String DAEMON_USER_UUID = "A4F30A1B-5EB9-11DF-A648-37A07F9C90FB";
 	
 }

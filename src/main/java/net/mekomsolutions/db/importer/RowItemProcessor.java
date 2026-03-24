@@ -1,5 +1,10 @@
 package net.mekomsolutions.db.importer;
 
+import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
+
+import java.sql.Types;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -11,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Object[]> {
+	
+	private static Integer daemonUserId;
 	
 	private Table baseTable;
 	
@@ -70,34 +77,24 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				if (fk != null) {
 					final String refTableName = fk.referenceTable();
 					if (log.isDebugEnabled()) {
-						log.debug("Getting the row in the {} source table referenced by {}.{}", refTableName, table.name(),
+						log.debug("Getting row in the {} source table referenced by {}.{}", refTableName, table.name(),
 						    fk.columnName());
 					}
 					
 					final String refColName = fk.referencedColumn();
-					Map<String, Object> refRow = sourceDbHelper.getRow(refTableName, refColName, value);
-					if (refRow == null) {
-						String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
-						    refTableName, refColName, value);
-						throw new RuntimeException(msg);
-					}
-					
-					if (!refRow.containsKey("uuid")) {
-						throw new RuntimeException(String.format("Source table %s has no uuid column", refTableName));
-					}
-					
-					Object refUuid = refRow.get("uuid");
+					Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
 					if (refUuid == null) {
-						String msg = String.format("No uuid found for referenced row in source table %s with %s = %s",
+						String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
 						    refTableName, refColName, value);
 						throw new RuntimeException(msg);
 					}
 					
 					//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
 					//repeatedly reference the same row
-					Object sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "uuid", refUuid);
+					refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
+					Object sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
 					if (sinkValue == null) {
-						sinkValue = insertReferencedRow(fk, refRow);
+						sinkValue = insertPlaceholderRow(fk, table.name(), refUuid);
 					}
 					
 					value = sinkValue;
@@ -110,16 +107,109 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 		return values;
 	}
 	
-	protected Object insertReferencedRow(ForeignKey fk, Map<String, Object> row) {
+	protected Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid) {
+		//TODO Make thread safe to avoid duplication of placeholder row
 		final String refTableName = fk.referenceTable();
 		if (log.isDebugEnabled()) {
-			final String baseColName = fk.columnName();
-			log.debug("Inserting a row into table {} referenced by {}.{}", refTableName, baseTable.name(), baseColName);
+			final String fromColName = fk.columnName();
+			final String kind = uuid == null ? "phantom" : "placeholder";
+			final Object Uid = uuid == null ? PHANTOM_UUID : uuid;
+			log.debug("Inserting {} row into sink table {} with uuid {} referenced by {}.{}", kind, refTableName, Uid,
+			    fkTableName, fromColName);
 		}
 		
 		Table refTable = metadataExtractor.getTable(refTableName);
-		Object[] refColumnValues = createColumnValues(refTable, row);
-		return sinkDbHelper.insertRow(refTableName, refTable.insertColumnNames(), refColumnValues);
+		List<Column> requiredColumns = getRequiredColumns(refTable);
+		return sinkDbHelper.insertRow(refTableName, requiredColumns.stream().map(Column::name).toList(),
+		    createPlaceholderRow(fk, requiredColumns, uuid));
+	}
+	
+	protected Object[] createPlaceholderRow(ForeignKey fk, List<Column> requiredColumns, Object uuid) {
+		final String refTableName = fk.referenceTable();
+		Object[] values = new Object[requiredColumns.size()];
+		int index = 0;
+		for (Column col : requiredColumns) {
+			final String colName = col.name();
+			Object value;
+			if ("uuid".equalsIgnoreCase(colName)) {
+				if (uuid != null) {
+					value = uuid;
+				} else {
+					//This is a dummy row since uuid is unknown
+					value = PHANTOM_UUID;
+				}
+			} else if ("voided".equalsIgnoreCase(colName) || "retired".equalsIgnoreCase(colName)) {
+				if (log.isDebugEnabled()) {
+					final String kind = uuid == null ? "phantom" : "placeholder";
+					log.debug("Marking {} row {} in sink table {} as {}", kind, colName, refTableName, colName);
+				}
+				
+				if (Types.BOOLEAN == col.sqlType()) {
+					value = true;
+				} else if (Types.BIT == col.sqlType()) {
+					value = 1;
+				} else {
+					String msg = "Don't know how handle type: " + col.sqlType() + " for column " + refTableName + "."
+					        + colName;
+					throw new RuntimeException(msg);
+				}
+			} else {
+				ForeignKey colFk = col.foreignKey();
+				if (colFk == null) {
+					value = DbUtils.getPlaceHolder(col, refTableName);
+				} else if (uuid == null && isUserSelfReference(refTableName, colName)) {
+					if (log.isDebugEnabled()) {
+						log.debug("Setting {} for phantom row in sink table {} to daemon user id", colName, refTableName);
+					}
+					
+					value = getDaemonUserId();
+				} else {
+					value = getPhantomRowId(colFk, refTableName);
+				}
+			}
+			
+			values[index] = value;
+			index++;
+		}
+		
+		return values;
+	}
+	
+	protected Object getPhantomRowId(ForeignKey fk, String fkTableName) {
+		//TODO Make thread safe to avoid duplication of phantom row
+		final String refTableName = fk.referenceTable();
+		final String refColName = fk.referencedColumn();
+		Object phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
+		if (phantomRowId == null) {
+			//Insert the phantom row
+			phantomRowId = insertPlaceholderRow(fk, fkTableName, null);
+		}
+		
+		return phantomRowId;
+	}
+	
+	private List<Column> getRequiredColumns(Table t) {
+		//TODO Cache the required columns for each table or change Table from a record
+		return t.columns().values().stream().filter(c -> !t.primaryKeys().contains(c.name()) && !c.nullable()).toList();
+	}
+	
+	private Integer getDaemonUserId() {
+		if (daemonUserId != null) {
+			return daemonUserId;
+		}
+		
+		Object id = sinkDbHelper.getColumnValue("users", "user_id", "UPPER(uuid)", Constants.DAEMON_USER_UUID);
+		if (id == null) {
+			throw new RuntimeException("Daemon user not found in sink database");
+		}
+		
+		daemonUserId = (Integer) id;
+		return daemonUserId;
+	}
+	
+	private boolean isUserSelfReference(String table, String colName) {
+		return "users".equalsIgnoreCase(table) && ("creator".equalsIgnoreCase(colName)
+		        || "changed_by".equalsIgnoreCase(colName) || "retired_by".equalsIgnoreCase(colName));
 	}
 	
 }
