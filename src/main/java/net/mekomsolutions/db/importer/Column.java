@@ -4,7 +4,7 @@ public record Column(String name, int sqlType, boolean nullable, int size, Forei
 	
 	@Override
 	public boolean equals(Object object) {
-		return name.equalsIgnoreCase(((Column) object).name);
+		return name.equals(((Column) object).name);
 	}
 	
 	@Override

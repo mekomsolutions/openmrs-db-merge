@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -95,9 +96,13 @@ public class StepFactory {
 	
 	protected ItemWriter<Object[]> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
-		String columns = String.join(",", table.insertColumnNames());
-		String placeholders = table.insertColumnNames().stream().map(c -> "?").collect(Collectors.joining(","));
-		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table.name(), columns, placeholders);
+		List<String> insertColumns = table.insertColumnNames();
+		String columns = String.join(",", insertColumns);
+		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
+		String updateClause = insertColumns.stream().filter(c -> c.equals("uuid")).map(c -> c + " = r." + c + ")")
+		        .collect(Collectors.joining(","));
+		String sql = String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause,
+		    table.name(), columns, placeholders);
 		JdbcBatchItemWriter<Object[]> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
 		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
 		
@@ -121,8 +126,8 @@ public class StepFactory {
 		String line;
 		List<Step> steps = new ArrayList<>();
 		while ((line = br.readLine()) != null) {
-			final Step step = createTableStep(line.trim(), metadataExtractor, prepStmtParamSetter, sourceDbHelper,
-			    sinkDbHelper);
+			final Step step = createTableStep(line.trim().toLowerCase(Locale.ENGLISH), metadataExtractor,
+			    prepStmtParamSetter, sourceDbHelper, sinkDbHelper);
 			steps.add(step);
 		}
 		

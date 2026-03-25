@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,7 +101,7 @@ public class MetadataExtractor {
 		
 		try (ResultSet rs = con.getMetaData().getColumns(con.getCatalog(), con.getSchema(), table, null)) {
 			while (rs.next()) {
-				String name = rs.getString("COLUMN_NAME");
+				String name = rs.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH);
 				int sqlType = rs.getInt("DATA_TYPE");
 				int size = rs.getInt("COLUMN_SIZE");
 				boolean isNullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
@@ -129,7 +130,7 @@ public class MetadataExtractor {
 		try (ResultSet rs = connection.getMetaData().getPrimaryKeys(connection.getCatalog(), connection.getSchema(),
 		    table)) {
 			while (rs.next()) {
-				primaryKeys.add(rs.getString("COLUMN_NAME"));
+				primaryKeys.add(rs.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH));
 			}
 		}
 		
@@ -154,10 +155,10 @@ public class MetadataExtractor {
 		try (ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(),
 		    table)) {
 			while (rs.next()) {
-				String name = rs.getString("FK_NAME");
-				String columnName = rs.getString("FKCOLUMN_NAME");
-				String referenceTable = rs.getString("PKTABLE_NAME");
-				String referencedColumn = rs.getString("PKCOLUMN_NAME");
+				String name = rs.getString("FK_NAME").toLowerCase(Locale.ENGLISH);
+				String columnName = rs.getString("FKCOLUMN_NAME").toLowerCase(Locale.ENGLISH);
+				String referenceTable = rs.getString("PKTABLE_NAME").toLowerCase(Locale.ENGLISH);
+				String referencedColumn = rs.getString("PKCOLUMN_NAME").toLowerCase(Locale.ENGLISH);
 				foreignKeys.add(new ForeignKey(name, columnName, referenceTable, referencedColumn));
 			}
 		}

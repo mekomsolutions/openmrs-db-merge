@@ -4,7 +4,7 @@ public record ForeignKey(String name, String columnName, String referenceTable, 
 	
 	@Override
 	public boolean equals(Object object) {
-		return name.equalsIgnoreCase(((ForeignKey) object).name);
+		return name.equals(((ForeignKey) object).name);
 	}
 	
 	@Override

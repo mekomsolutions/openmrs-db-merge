@@ -40,14 +40,14 @@ public class ImportUtils {
 		for (Column col : requiredColumns) {
 			final String colName = col.name();
 			Object value;
-			if ("uuid".equalsIgnoreCase(colName)) {
+			if ("uuid".equals(colName)) {
 				if (uuid != null) {
 					value = uuid;
 				} else {
 					//This is a dummy row since uuid is unknown
 					value = PHANTOM_UUID;
 				}
-			} else if ("voided".equalsIgnoreCase(colName) || "retired".equalsIgnoreCase(colName)) {
+			} else if ("voided".equals(colName) || "retired".equals(colName)) {
 				if (log.isDebugEnabled()) {
 					final String kind = uuid == null ? "phantom" : "placeholder";
 					log.debug("Marking {} row {} in sink table {} as {}", kind, colName, refTableName, colName);
@@ -106,8 +106,8 @@ public class ImportUtils {
 	}
 	
 	private static boolean isUserSelfReference(String table, String colName) {
-		return "users".equalsIgnoreCase(table) && ("creator".equalsIgnoreCase(colName)
-		        || "changed_by".equalsIgnoreCase(colName) || "retired_by".equalsIgnoreCase(colName));
+		return "users".equals(table)
+		        && ("creator".equals(colName) || "changed_by".equals(colName) || "retired_by".equals(colName));
 	}
 	
 	private static Integer getDaemonUserId(SinkDbHelper sinkDbHelper) {
