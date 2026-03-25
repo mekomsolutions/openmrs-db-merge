@@ -52,20 +52,23 @@ public class MetadataExtractor {
 			return NAME_AND_TABLE_CACHE.get(tableName);
 		}
 		
-		Table table = jdbcTemplate.execute((ConnectionCallback<Table>) c -> {
-			List<String> keys = getPrimaryKeys(tableName, c);
+		Table table = jdbcTemplate.execute((ConnectionCallback<Table>) connection -> {
+			List<String> keys = getPrimaryKeys(tableName, connection);
 			if (keys.size() != 1) {
 				//TODO Add support for these tables
 				throw new RuntimeException("Table " + tableName + " has unsupported primary key count " + keys.size());
 			}
 			
-			List<Column> columns = getColumns(tableName, c);
+			List<Column> columns = getColumns(tableName, connection);
 			List<String> columnNames = columns.stream().map(col -> col.name()).toList();
-			List<String> insertColumns = columnNames;
-			//If we have multiple PKs, it a mapping key so they are most likely not auto generated.
-			if (keys.size() == 1) {
-				//TODO Fail if a primary key is not auto generated otherwise we can't guarantee uniqueness
-				insertColumns = columnNames.stream().filter(col -> !keys.contains(col)).toList();
+			//If we have multiple PKs, it is a mapping table so they are most likely not auto generated.
+			//TODO Fail if a primary key is not auto generated otherwise we can't guarantee uniqueness
+			List<String> insertColumns = columnNames.stream().filter(col -> !keys.contains(col)).toList();
+			if (ImportUtils.isSubclassTable(tableName)) {
+				final List<String> temp = new ArrayList<>(insertColumns);
+				insertColumns = new ArrayList<>(temp.size() + 1);
+				insertColumns.add(keys.get(0));
+				insertColumns.addAll(temp);
 			}
 			
 			Map<String, Column> nameColMap = columns.stream().collect(Collectors.toMap(Column::name, col -> col));

@@ -14,12 +14,14 @@ public class ImportUtils {
 	private static Integer daemonUserId;
 	
 	protected static String getWriteSql(Table table) {
+		final String tableName = table.name();
+		String uniqueColumn = ImportUtils.isSubclassTable(tableName) ? table.primaryKeys().get(0) : "uuid";
 		List<String> insertColumns = table.insertColumnNames();
 		String columns = String.join(",", insertColumns);
 		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
-		String updateClause = insertColumns.stream().filter(c -> !c.equals("uuid")).map(c -> c + " = r." + c)
+		String updateClause = insertColumns.stream().filter(c -> !c.equals(uniqueColumn)).map(c -> c + " = r." + c)
 		        .collect(Collectors.joining(","));
-		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause, table.name(),
+		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause, tableName,
 		    columns, placeholders);
 	}
 	
