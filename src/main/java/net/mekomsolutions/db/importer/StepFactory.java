@@ -96,13 +96,7 @@ public class StepFactory {
 	
 	protected ItemWriter<Object[]> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
-		List<String> insertColumns = table.insertColumnNames();
-		String columns = String.join(",", insertColumns);
-		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
-		String updateClause = insertColumns.stream().filter(c -> c.equals("uuid")).map(c -> c + " = r." + c + ")")
-		        .collect(Collectors.joining(","));
-		String sql = String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause,
-		    table.name(), columns, placeholders);
+		final String sql = ImportUtils.getWriteSql(table);
 		JdbcBatchItemWriter<Object[]> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
 		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
 		

@@ -4,6 +4,7 @@ import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.sql.Types;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,6 +12,20 @@ import lombok.extern.slf4j.Slf4j;
 public class ImportUtils {
 	
 	private static Integer daemonUserId;
+	
+	protected static String getWriteSql(Table table) {
+		List<String> insertColumns = table.insertColumnNames();
+		String columns = String.join(",", insertColumns);
+		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
+		String updateClause = insertColumns.stream().filter(c -> !c.equals("uuid")).map(c -> c + " = r." + c)
+		        .collect(Collectors.joining(","));
+		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause, table.name(),
+		    columns, placeholders);
+	}
+	
+	protected static boolean isSubclassTable(String tableName) {
+		return Constants.SUBCLASS_TABLES.contains(tableName);
+	}
 	
 	protected static Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
