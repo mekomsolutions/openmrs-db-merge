@@ -22,8 +22,11 @@ public class SinkDbHelper {
 	
 	protected JdbcTemplate jdbcTemplate;
 	
-	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	protected MetadataExtractor metadataExtractor;
+	
+	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate, MetadataExtractor metadataExtractor) {
 		this.jdbcTemplate = jdbcTemplate;
+		this.metadataExtractor = metadataExtractor;
 	}
 	
 	/**
@@ -60,43 +63,67 @@ public class SinkDbHelper {
 	/**
 	 * Inserts a single row into the specified database table.
 	 *
-	 * @param table the name of the database table where the row will be inserted.
+	 * @param tableName the name of the database table where the row will be inserted.
 	 * @param columnNames a list of column names that correspond to the table's structure.
 	 * @param values an array of objects representing the values for the corresponding columns.
 	 * @return the number of rows affected by the insert operation.
 	 */
-	public Object insertRow(String table, List<String> columnNames, Object[] values) {
+	public Object insertRow(String tableName, List<String> columnNames, Object[] values) {
 		if (log.isDebugEnabled()) {
-			log.debug("Inserting a row into table {}", table);
+			log.debug("Inserting a row into table {}", tableName);
 		}
 		
 		String columns = String.join(",", columnNames);
 		String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
-		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columns, placeholders);
+		String sqlTemplate = "INSERT INTO %s (%s) VALUES (%s)";
+		boolean isSubclassTable = ImportUtils.isSubclassTable(tableName);
+		Object parentRowId = null;
+		if (isSubclassTable) {
+			//Primary key values for subclass tables are not auto generated but instead FKs to the parent table, 
+			//so we need to update the row if it already exists.
+			Table table = metadataExtractor.getTable(tableName);
+			final String pkColName = table.primaryKeys().get(0);
+			String updateCols = columnNames.stream().filter(c -> !c.equals(pkColName)).map(c -> c + " = r." + c)
+			        .collect(Collectors.joining(","));
+			sqlTemplate += " AS r ON DUPLICATE KEY UPDATE " + updateCols;
+			parentRowId = values[columnNames.indexOf(pkColName)];
+		}
 		
+		String sql = String.format(sqlTemplate, tableName, columns, placeholders);
 		try {
 			PreparedStatementCreatorFactory pscFactory = new PreparedStatementCreatorFactory(sql);
-			pscFactory.setReturnGeneratedKeys(true);
-			KeyHolder keyHolder = new GeneratedKeyHolder();
-			int insertCount = jdbcTemplate.update(pscFactory.newPreparedStatementCreator(values), keyHolder);
+			int insertCount;
+			Object rowId;
+			//PKs for subclass tables are FKs to the parent table and therefore not auto generated.
+			if (!isSubclassTable) {
+				pscFactory.setReturnGeneratedKeys(true);
+				KeyHolder keyHolder = new GeneratedKeyHolder();
+				insertCount = jdbcTemplate.update(pscFactory.newPreparedStatementCreator(values), keyHolder);
+				if (keyHolder.getKey() == null) {
+					throw new RuntimeException("No auto generated key found after insert");
+				} else if (keyHolder.getKeys().size() != 1) {
+					throw new RuntimeException(
+					        "Invalid auto generated key count after insert " + keyHolder.getKeys().size());
+				}
+				
+				rowId = keyHolder.getKey();
+			} else {
+				insertCount = jdbcTemplate.update(pscFactory.newPreparedStatementCreator(values));
+				rowId = parentRowId;
+			}
+			
 			if (insertCount != 1) {
 				throw new RuntimeException("Invalid insert count " + insertCount);
 			}
 			
-			if (keyHolder.getKey() == null) {
-				throw new RuntimeException("No auto generated key found after insert");
-			} else if (keyHolder.getKeys().size() != 1) {
-				throw new RuntimeException("Invalid auto generated key count after insert " + keyHolder.getKeys().size());
+			if (log.isTraceEnabled()) {
+				log.trace("Successfully inserted {} row into table {}: {}", insertCount, tableName);
 			}
 			
-			if (log.isDebugEnabled()) {
-				log.debug("Successfully inserted {} row into table {}: {}", insertCount, table);
-			}
-			
-			return keyHolder.getKey();
+			return rowId;
 		}
 		catch (Exception e) {
-			final String msg = String.format("Error occurred while inserting a row into table %s: %s", table,
+			final String msg = String.format("Error occurred while inserting a row into table %s: %s", tableName,
 			    e.getMessage());
 			throw new RuntimeException(msg, e);
 		}

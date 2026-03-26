@@ -69,13 +69,20 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				Column column = table.getColumn(columnName);
 				ForeignKey fk = column.foreignKey();
 				if (fk != null) {
-					final String refTableName = fk.referenceTable();
+					String refTableName = fk.referenceTable();
+					String refColName = fk.referencedColumn();
+					if (ImportUtils.isSubclassTable(refTableName)) {
+						Table refTable = metadataExtractor.getTable(refTableName);
+						ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
+						refTableName = parentFk.referenceTable();
+						refColName = parentFk.referencedColumn();
+					}
+					
 					if (log.isDebugEnabled()) {
 						log.debug("Getting row in the {} source table referenced by {}.{}", refTableName, table.name(),
 						    fk.columnName());
 					}
 					
-					final String refColName = fk.referencedColumn();
 					Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
 					if (refUuid == null) {
 						String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
