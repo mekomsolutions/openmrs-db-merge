@@ -72,11 +72,11 @@ public class StepFactory {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
-		ItemProcessor<Map<String, Object>, Object[]> processor = new RowItemProcessor(table, metadataExtractor,
-		        sourceDbHelper, sinkDbHelper);
-		ItemWriter<Object[]> writer = createWriter(table, prepStmtParamSetter);
-		SimpleStepBuilder<Map<String, Object>, Object[]> builder = new StepBuilder(tableName, jobRepository)
-		        .chunk(batchWriteSize, txManager);
+		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, metadataExtractor, sourceDbHelper,
+		        sinkDbHelper);
+		ItemWriter<Row> writer = createWriter(table, prepStmtParamSetter);
+		SimpleStepBuilder<Map<String, Object>, Row> builder = new StepBuilder(tableName, jobRepository).chunk(batchWriteSize,
+		    txManager);
 		return builder.reader(reader).processor(processor).writer(writer).build();
 	}
 	
@@ -104,10 +104,10 @@ public class StepFactory {
 		return reader;
 	}
 	
-	protected ItemWriter<Object[]> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
+	protected ItemWriter<Row> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
 		final String sql = ImportUtils.getWriteSql(table);
-		JdbcBatchItemWriter<Object[]> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
+		JdbcBatchItemWriter<Row> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
 		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
 		
 		try {

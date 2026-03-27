@@ -9,12 +9,12 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ArrayPreparedStatementParamSetter implements ItemPreparedStatementSetter<Object[]> {
+public class ArrayPreparedStatementParamSetter implements ItemPreparedStatementSetter<Row> {
 	
 	@Override
-	public void setValues(Object[] values, PreparedStatement ps) throws SQLException {
+	public void setValues(Row row, PreparedStatement ps) throws SQLException {
 		int counter = 1;
-		for (Object value : values) {
+		for (Object value : row.values()) {
 			//TODO Use the column sql type
 			StatementCreatorUtils.setParameterValue(ps, counter++, SqlTypeValue.TYPE_UNKNOWN, value);
 		}

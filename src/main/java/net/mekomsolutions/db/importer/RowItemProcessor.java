@@ -2,14 +2,13 @@ package net.mekomsolutions.db.importer;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.batch.item.adapter.ItemProcessorAdapter;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Object[]> {
+public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Row> {
 	
 	private Table baseTable;
 	
@@ -28,15 +27,15 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	}
 	
 	@Override
-	public Object[] process(Map<String, Object> item) throws Exception {
-		//TODO If an item exists in the sink DB, may be update it, but where did it come from?
-		final String pk = item.entrySet().stream().filter(e -> baseTable.primaryKeys().contains(e.getKey()))
-		        .map(e -> e.getValue().toString()).collect(Collectors.joining(","));
+	public Row process(Map<String, Object> item) throws Exception {
+		String pkColumnName = baseTable.primaryKeys().get(0);
+		final Integer id = (Integer) item.get(pkColumnName);
 		if (log.isDebugEnabled()) {
-			log.debug("Processing: {}", pk);
+			log.debug("Processing: {}", id);
 		}
 		
-		return createColumnValues(baseTable, item);
+		final Object[] values = createColumnValues(baseTable, item);
+		return new Row(id, values);
 	}
 	
 	/**
