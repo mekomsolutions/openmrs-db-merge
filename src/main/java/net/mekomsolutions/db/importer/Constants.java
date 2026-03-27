@@ -11,6 +11,10 @@ import java.util.List;
 
 public class Constants {
 	
+	public static final String JOB_NAME = "importJob";
+	
+	public static final String STEP_KEY_MAX_PROCESSED_ID = Constants.class.getPackageName() + ".maxProcessedRowId";
+	
 	public static final Date EPOCH_DATE = Date.valueOf(LocalDate.of(1970, Month.JANUARY, 1));
 	
 	public static final Timestamp EPOCH = Timestamp.valueOf(LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0, 0));

@@ -6,6 +6,11 @@ import java.sql.Types;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.batch.core.JobInstance;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.repository.JobRepository;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -100,6 +105,29 @@ public class ImportUtils {
 		}
 		
 		return values;
+	}
+	
+	protected static Object getMaxRowId(JobExplorer jobExplorer, JobRepository jobRepository, String tableName) {
+		//Traverse all past job instances starting with most recent to find the one where we saved a max row id value.
+		List<JobInstance> jobInstances = jobExplorer.getJobInstances(Constants.JOB_NAME, 0, Integer.MAX_VALUE);
+		for (JobInstance instance : jobInstances) {
+			Object rowId = getMaxRowId(jobRepository, instance, tableName);
+			if (rowId != null) {
+				return rowId;
+			}
+		}
+		
+		return null;
+	}
+	
+	private static Object getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {
+		Object rowId = null;
+		StepExecution stepExecution = jobRepository.getLastStepExecution(jobInstance, tableName);
+		if (stepExecution != null) {
+			rowId = stepExecution.getExecutionContext().get(Constants.STEP_KEY_MAX_PROCESSED_ID);
+		}
+		
+		return rowId;
 	}
 	
 	private static Object getPhantomRowId(ForeignKey fk, String fkTableName, MetadataExtractor metadataExtractor,

@@ -4,8 +4,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.BeforeStep;
 import org.springframework.batch.item.adapter.ItemProcessorAdapter;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +25,6 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
-	}
-	
-	@BeforeStep
-	public void beforeStep(StepExecution stepExecution) {
-		if (log.isDebugEnabled()) {
-			log.debug("Processing table: {}", baseTable.name());
-		}
 	}
 	
 	@Override

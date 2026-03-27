@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -44,6 +45,8 @@ public class StepFactory {
 	@Value("${batch.write.size:50}")
 	private Integer batchWriteSize;
 	
+	private JobExplorer jobExplorer;
+	
 	private JobRepository jobRepository;
 	
 	private PlatformTransactionManager txManager;
@@ -54,9 +57,10 @@ public class StepFactory {
 	
 	final private ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
 	
-	public StepFactory(JobRepository jobRepository, PlatformTransactionManager txManager,
+	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager txManager,
 	    @Qualifier("sourceDataSource") DataSource sourceDataSource, @Qualifier("sinkDataSource") DataSource sinkDataSource) {
 		this.jobRepository = jobRepository;
+		this.jobExplorer = jobExplorer;
 		this.txManager = txManager;
 		this.sourceDataSource = sourceDataSource;
 		this.sinkDataSource = sinkDataSource;
@@ -80,10 +84,16 @@ public class StepFactory {
 		Map<String, Order> sortKeys = table.primaryKeys().stream()
 		        .collect(Collectors.toMap(Function.identity(), s -> Order.ASCENDING));
 		String name = table.name();
-		final JdbcPagingItemReader<Map<String, Object>> reader = new JdbcPagingItemReaderBuilder().name(name)
-		        .dataSource(sourceDataSource).selectClause("SELECT *").fromClause("FROM " + name).sortKeys(sortKeys)
-		        .pageSize(batchReadSize).rowMapper(ROW_MAPPER).build();
+		final JdbcPagingItemReaderBuilder<Map<String, Object>> builder = new JdbcPagingItemReaderBuilder();
+		builder.dataSource(sourceDataSource).selectClause("SELECT *").fromClause("FROM " + name).sortKeys(sortKeys)
+		        .pageSize(batchReadSize).rowMapper(ROW_MAPPER);
+		final Object maxProcessedRowId = ImportUtils.getMaxRowId(jobExplorer, jobRepository, name);
+		if (maxProcessedRowId != null) {
+			log.info("Importing rows from {} table with {} > {}", name, table.primaryKeys().get(0), maxProcessedRowId);
+			builder.whereClause(table.primaryKeys().get(0) + " > " + maxProcessedRowId);
+		}
 		
+		final JdbcPagingItemReader<Map<String, Object>> reader = builder.build();
 		try {
 			reader.afterPropertiesSet();
 		}

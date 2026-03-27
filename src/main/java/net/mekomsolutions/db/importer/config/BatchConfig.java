@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.ArrayPreparedStatementParamSetter;
+import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.SinkDbHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
@@ -40,7 +42,7 @@ public class BatchConfig {
 	                     SinkDbHelper sinkDbHelper)
 	    throws Exception {
 		
-		JobBuilder jobBuilder = new JobBuilder("importJob", jobRepository).preventRestart();
+		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
 		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper);
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {
@@ -56,10 +58,11 @@ public class BatchConfig {
 	}
 	
 	@Bean
-	public StepFactory stepFactory(JobRepository jobRepository, PlatformTransactionManager txManager,
+	public StepFactory stepFactory(JobRepository jobRepository, JobExplorer jobExplorer,
+	                               PlatformTransactionManager txManager,
 	                               @Qualifier("sourceDataSource") DataSource sourceDataSource,
 	                               @Qualifier("sinkDataSource") DataSource sinkDataSource) {
-		return new StepFactory(jobRepository, txManager, sourceDataSource, sinkDataSource);
+		return new StepFactory(jobRepository, jobExplorer, txManager, sourceDataSource, sinkDataSource);
 	}
 	
 }
