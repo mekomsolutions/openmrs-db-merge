@@ -85,8 +85,8 @@ public class StepFactory {
 		        .collect(Collectors.toMap(Function.identity(), s -> Order.ASCENDING));
 		String name = table.name();
 		final JdbcPagingItemReaderBuilder<Map<String, Object>> builder = new JdbcPagingItemReaderBuilder();
-		builder.dataSource(sourceDataSource).selectClause("SELECT *").fromClause("FROM " + name).sortKeys(sortKeys)
-		        .pageSize(batchReadSize).rowMapper(ROW_MAPPER);
+		builder.name(name).dataSource(sourceDataSource).selectClause("SELECT *").fromClause("FROM " + name)
+		        .sortKeys(sortKeys).pageSize(batchReadSize).rowMapper(ROW_MAPPER);
 		final Object maxProcessedRowId = ImportUtils.getMaxRowId(jobExplorer, jobRepository, name);
 		if (maxProcessedRowId != null) {
 			log.info("Importing rows from {} table with {} > {}", name, table.primaryKeys().get(0), maxProcessedRowId);
