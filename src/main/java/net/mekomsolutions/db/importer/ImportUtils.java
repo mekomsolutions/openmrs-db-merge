@@ -107,11 +107,21 @@ public class ImportUtils {
 		return values;
 	}
 	
-	protected static Object getMaxRowId(JobExplorer jobExplorer, JobRepository jobRepository, String tableName) {
+	/**
+	 * Retrieves the maximum known processed row ID value for a specific table from past job instances.
+	 * The method iterates through all job instances associated with a predefined job name, starting
+	 * with the most recent, to find the instance where a maximum row ID value is stored.
+	 *
+	 * @param jobExplorer the JobExplorer instance
+	 * @param jobRepository the JobRepository instance
+	 * @param tableName the name of the table for which the maximum row ID is being retrieved
+	 * @return the maximum processed row ID value for the specified table, or null if no value is found
+	 */
+	protected static Integer getMaxRowId(JobExplorer jobExplorer, JobRepository jobRepository, String tableName) {
 		//Traverse all past job instances starting with most recent to find the one where we saved a max row id value.
 		List<JobInstance> jobInstances = jobExplorer.getJobInstances(Constants.JOB_NAME, 0, Integer.MAX_VALUE);
 		for (JobInstance instance : jobInstances) {
-			Object rowId = getMaxRowId(jobRepository, instance, tableName);
+			Integer rowId = getMaxRowId(jobRepository, instance, tableName);
 			if (rowId != null) {
 				return rowId;
 			}
@@ -120,11 +130,11 @@ public class ImportUtils {
 		return null;
 	}
 	
-	private static Object getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {
-		Object rowId = null;
+	private static Integer getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {
+		Integer rowId = null;
 		StepExecution stepExecution = jobRepository.getLastStepExecution(jobInstance, tableName);
 		if (stepExecution != null) {
-			rowId = stepExecution.getExecutionContext().get(Constants.STEP_KEY_MAX_PROCESSED_ID);
+			rowId = stepExecution.getExecutionContext().get(Constants.STEP_KEY_MAX_PROCESSED_ID, Integer.class, null);
 		}
 		
 		return rowId;
