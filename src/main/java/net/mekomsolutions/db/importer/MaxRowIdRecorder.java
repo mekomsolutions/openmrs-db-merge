@@ -36,7 +36,7 @@ public class MaxRowIdRecorder {
 	
 	@AfterChunk
 	public void afterChunk(ChunkContext context) {
-		if (maxProcessedRowId == null) {
+		if (maxProcessedRowId != null) {
 			final StepContext stepContext = context.getStepContext();
 			if (log.isDebugEnabled()) {
 				log.trace("Saving max row id of {} for table {}", maxProcessedRowId, stepContext.getStepName());

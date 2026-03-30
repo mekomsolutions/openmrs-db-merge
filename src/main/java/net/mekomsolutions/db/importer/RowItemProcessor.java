@@ -28,14 +28,21 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	
 	@Override
 	public Row process(Map<String, Object> item) throws Exception {
-		String pkColumnName = baseTable.primaryKeys().get(0);
-		final Integer id = (Integer) item.get(pkColumnName);
-		if (log.isDebugEnabled()) {
-			log.debug("Processing: {}", id);
+		String threadName = Thread.currentThread().getName();
+		try {
+			String pkColumnName = baseTable.primaryKeys().get(0);
+			final Integer id = (Integer) item.get(pkColumnName);
+			Thread.currentThread().setName(baseTable.name() + ":" + id);
+			if (log.isDebugEnabled()) {
+				log.debug("Processing: {}", id);
+			}
+			
+			final Object[] values = createColumnValues(baseTable, item);
+			return new Row(id, values);
 		}
-		
-		final Object[] values = createColumnValues(baseTable, item);
-		return new Row(id, values);
+		finally {
+			Thread.currentThread().setName(threadName);
+		}
 	}
 	
 	/**
