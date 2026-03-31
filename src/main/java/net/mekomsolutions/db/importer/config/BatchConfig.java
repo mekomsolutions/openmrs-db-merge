@@ -32,7 +32,6 @@ public class BatchConfig {
 		TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
 		jobLauncher.setJobRepository(jobRepository);
 		jobLauncher.afterPropertiesSet();
-		//TODO Configured ThreadPoolTaskScheduler
 		return jobLauncher;
 	}
 	

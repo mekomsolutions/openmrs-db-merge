@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,8 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -29,6 +32,7 @@ import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuild
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.extern.slf4j.Slf4j;
@@ -72,12 +76,12 @@ public class StepFactory {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
-		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, metadataExtractor, sourceDbHelper,
-		        sinkDbHelper);
-		ItemWriter<Row> writer = createWriter(table, prepStmtParamSetter);
-		SimpleStepBuilder<Map<String, Object>, Row> builder = new StepBuilder(tableName, jobRepository).chunk(batchWriteSize,
-		    txManager);
-		return builder.reader(reader).processor(processor).writer(writer).build();
+		ItemProcessor<Map<String, Object>, Future<Row>> processor = createProcessor(table, metadataExtractor, sourceDbHelper,
+		    sinkDbHelper);
+		ItemWriter<Future<Row>> writer = createWriter(table, prepStmtParamSetter);
+		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
+		        .chunk(batchWriteSize, txManager);
+		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder()).build();
 	}
 	
 	protected ItemReader<Map<String, Object>> createReader(Table table) {
@@ -104,7 +108,31 @@ public class StepFactory {
 		return reader;
 	}
 	
-	protected ItemWriter<Row> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
+	protected ItemProcessor<Map<String, Object>, Future<Row>> createProcessor(Table table,
+	                                                                          MetadataExtractor metadataExtractor,
+	                                                                          SourceDbHelper sourceDbHelper,
+	                                                                          SinkDbHelper sinkDbHelper) {
+		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, metadataExtractor, sourceDbHelper,
+		        sinkDbHelper);
+		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
+		asyncProcessor.setDelegate(processor);
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		//TODO Make configurable
+		executor.setCorePoolSize(32);
+		executor.setMaxPoolSize(32);
+		executor.initialize();
+		asyncProcessor.setTaskExecutor(executor);
+		try {
+			asyncProcessor.afterPropertiesSet();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		return asyncProcessor;
+	}
+	
+	protected ItemWriter<Future<Row>> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
 		final String sql = ImportUtils.getWriteSql(table);
 		JdbcBatchItemWriter<Row> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
@@ -117,7 +145,16 @@ public class StepFactory {
 			throw new RuntimeException(e);
 		}
 		
-		return writer;
+		AsyncItemWriter<Row> asyncWriter = new AsyncItemWriter();
+		asyncWriter.setDelegate(writer);
+		try {
+			asyncWriter.afterPropertiesSet();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		return asyncWriter;
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor, ArrayPreparedStatementParamSetter prepStmtParamSetter,
