@@ -143,13 +143,19 @@ public class ImportUtils {
 	private static Object getPhantomRowId(ForeignKey fk, String fkTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
 		
-		//TODO Make thread safe to avoid duplication of phantom row
 		final String refTableName = fk.referenceTable();
 		final String refColName = fk.referencedColumn();
 		Object phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
 		if (phantomRowId == null) {
-			//Insert the phantom row
-			phantomRowId = insertPlaceholderRow(fk, fkTableName, null, metadataExtractor, sinkDbHelper);
+			//We don't want concurrent inserts of phantom row which would result in unique constraint violation on
+			//the uuid column
+			synchronized (ImportUtils.class) {
+				phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
+				if (phantomRowId == null) {
+					//Insert the phantom row
+					phantomRowId = insertPlaceholderRow(fk, fkTableName, null, metadataExtractor, sinkDbHelper);
+				}
+			}
 		}
 		
 		return phantomRowId;

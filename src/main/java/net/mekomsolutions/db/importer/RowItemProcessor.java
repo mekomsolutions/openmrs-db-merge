@@ -87,13 +87,19 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 						throw new RuntimeException(msg);
 					}
 					
-					//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
-					//repeatedly reference the same row
-					refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
-					Object sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
-					if (sinkValue == null) {
-						sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor,
-						    sinkDbHelper);
+					Object sinkValue;
+					//Synchronized block ensures no concurrent inserts of placeholders into a specific table to avoid 
+					//race conditions and possibly deadlocks.
+					//TODO we should possibly allow concurrent inserts of different rows.
+					synchronized (fk) {
+						//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
+						//repeatedly reference the same row
+						refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
+						sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
+						if (sinkValue == null) {
+							sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor,
+							    sinkDbHelper);
+						}
 					}
 					
 					value = sinkValue;
