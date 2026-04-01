@@ -33,6 +33,31 @@ public class MetadataExtractor {
 	}
 	
 	/**
+	 * Retrieves a list of all table names from the database.
+	 *
+	 * @return A List of table names.
+	 * @throws SQLException
+	 */
+	public List<String> getTableNames() {
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching all tables from the database");
+		}
+		
+		List<String> tableNames = new ArrayList<>();
+		jdbcTemplate.execute((ConnectionCallback<Void>) con -> {
+			try (ResultSet rs = con.getMetaData().getTables(con.getCatalog(), con.getSchema(), null,
+			    new String[] { "TABLE" })) {
+				while (rs.next()) {
+					tableNames.add(rs.getString("TABLE_NAME").toLowerCase(Locale.ENGLISH));
+				}
+			}
+			return null;
+		});
+		
+		return tableNames;
+	}
+	
+	/**
 	 * Gets metadata information for a table and creates a Table object containing the information.
 	 *
 	 * @param tableName The name of the table to fetch metadata for.

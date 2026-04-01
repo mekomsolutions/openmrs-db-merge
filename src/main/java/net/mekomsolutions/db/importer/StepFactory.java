@@ -5,9 +5,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,8 +42,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StepFactory {
 	
-	@Value("${tables.file.path}")
-	private File tablesFile;
+	@Value("${tables.exclude.file.path}")
+	private File excludeTablesFile;
 	
 	@Value("${batch.read.size:1000}")
 	private Integer batchReadSize;
@@ -161,16 +163,21 @@ public class StepFactory {
 	                           SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper)
 	    throws IOException {
 		
-		log.info("Importing sync tables defined in file {}", tablesFile);
+		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
 		
-		BufferedReader br = new BufferedReader(new FileReader(tablesFile));
+		BufferedReader br = new BufferedReader(new FileReader(excludeTablesFile));
 		String line;
-		List<Step> steps = new ArrayList<>();
+		Set<String> excludes = new HashSet<>();
 		while ((line = br.readLine()) != null) {
-			final Step step = createTableStep(line.trim().toLowerCase(Locale.ENGLISH), metadataExtractor,
-			    prepStmtParamSetter, sourceDbHelper, sinkDbHelper);
-			steps.add(step);
+			excludes.add(line.trim().toLowerCase(Locale.ENGLISH));
 		}
+		
+		List<String> tables = metadataExtractor.getTableNames();
+		List<Step> steps = new ArrayList<>();
+		tables.stream().filter(t -> !excludes.contains(t)).forEach(
+		    t -> steps.add(createTableStep(t, metadataExtractor, prepStmtParamSetter, sourceDbHelper, sinkDbHelper)));
+		
+		log.info("Importing {} tables", steps.size());
 		
 		return steps;
 	}
