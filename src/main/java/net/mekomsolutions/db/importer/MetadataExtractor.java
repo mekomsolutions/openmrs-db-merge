@@ -135,9 +135,10 @@ public class MetadataExtractor {
 				String name = rs.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH);
 				int sqlType = rs.getInt("DATA_TYPE");
 				int size = rs.getInt("COLUMN_SIZE");
+				boolean isAutoIncrement = "YES".equalsIgnoreCase(rs.getString("IS_AUTOINCREMENT"));
 				boolean isNullable = "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
 				ForeignKey fk = colAndFkMap.get(name);
-				columns.add(new Column(name, sqlType, isNullable, size, fk));
+				columns.add(new Column(name, sqlType, isAutoIncrement, isNullable, size, fk));
 			}
 		}
 		

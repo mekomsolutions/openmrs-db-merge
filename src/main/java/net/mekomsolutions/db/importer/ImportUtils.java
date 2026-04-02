@@ -163,9 +163,7 @@ public class ImportUtils {
 	
 	private static List<Column> getRequiredColumns(Table t) {
 		//TODO Cache the required columns for each table or change Table from a record
-		boolean isSubclassTable = isSubclassTable(t.name());
-		return t.columns().values().stream()
-		        .filter(c -> (!t.primaryKeys().contains(c.name()) || isSubclassTable) && !c.nullable()).toList();
+		return t.columns().values().stream().filter(c -> !c.nullable() && !c.autoIncrement()).toList();
 	}
 	
 	private static boolean isUserSelfReference(String table, String colName) {
