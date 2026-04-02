@@ -174,7 +174,8 @@ public class StepFactory {
 		
 		List<String> tables = metadataExtractor.getTableNames();
 		List<Step> steps = new ArrayList<>();
-		tables.stream().filter(t -> !excludes.contains(t)).forEach(
+		//Skip excluded and empty tables
+		tables.stream().filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).forEach(
 		    t -> steps.add(createTableStep(t, metadataExtractor, prepStmtParamSetter, sourceDbHelper, sinkDbHelper)));
 		
 		log.info("Importing {} tables", steps.size());
