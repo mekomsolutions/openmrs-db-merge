@@ -2,6 +2,7 @@ package net.mekomsolutions.db.importer;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.batch.item.adapter.ItemProcessorAdapter;
 
@@ -30,14 +31,20 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	public Row process(Map<String, Object> item) throws Exception {
 		String threadName = Thread.currentThread().getName();
 		try {
-			String pkColumnName = baseTable.primaryKeys().get(0);
-			final Integer id = (Integer) item.get(pkColumnName);
-			Thread.currentThread().setName(baseTable.name() + ":" + id);
+			final String key = baseTable.primaryKeys().stream().map(k -> item.get(k).toString())
+			        .collect(Collectors.joining(","));
+			Thread.currentThread().setName(baseTable.name() + ":" + key);
 			if (log.isDebugEnabled()) {
-				log.debug("Processing: {}", id);
+				log.debug("Processing: {}", key);
 			}
 			
 			final Object[] values = createColumnValues(baseTable, item);
+			Integer id = null;
+			if (baseTable.primaryKeys().size() == 1) {
+				String pkColumnName = baseTable.primaryKeys().get(0);
+				id = (Integer) item.get(pkColumnName);
+			}
+			
 			return new Row(id, values);
 		}
 		finally {

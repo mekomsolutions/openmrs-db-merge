@@ -24,7 +24,7 @@ public class StartupListener {
 	
 	@EventListener(classes = { ContextRefreshedEvent.class })
 	public void contextRefreshed() throws Exception {
-		log.info("Starting the import job to sync tables");
+		log.info("Starting the job to import tables");
 		JobParametersBuilder builder = new JobParametersBuilder().addLocalDateTime("timestamp", LocalDateTime.now());
 		jobLauncher.run(job, builder.toJobParameters());
 	}

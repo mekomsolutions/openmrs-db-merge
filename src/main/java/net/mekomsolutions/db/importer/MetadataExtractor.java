@@ -76,17 +76,10 @@ public class MetadataExtractor {
 					
 					Table table = jdbcTemplate.execute((ConnectionCallback<Table>) connection -> {
 						List<String> keys = getPrimaryKeys(tableName, connection);
-						if (keys.size() != 1) {
-							//TODO Add support for these tables
-							throw new RuntimeException(
-							        "Table " + tableName + " has unsupported primary key count " + keys.size());
-						}
-						
 						List<Column> columns = getColumns(tableName, connection);
 						List<String> columnNames = columns.stream().map(col -> col.name()).toList();
-						//If we have multiple PKs, it is a mapping table so they are most likely not auto generated.
-						//TODO Fail if a primary key is not auto generated otherwise we can't guarantee uniqueness
-						List<String> insertColumns = columnNames.stream().filter(col -> !keys.contains(col)).toList();
+						List<String> insertColumns = columns.stream().filter(c -> !c.autoIncrement()).map(c -> c.name())
+						        .toList();
 						if (ImportUtils.isSubclassTable(tableName)) {
 							final List<String> temp = new ArrayList<>(insertColumns);
 							insertColumns = new ArrayList<>(temp.size() + 1);
@@ -96,13 +89,22 @@ public class MetadataExtractor {
 						
 						Map<String, Column> nameColMap = columns.stream()
 						        .collect(Collectors.toMap(Column::name, col -> col));
-						if (!ImportUtils.isSubclassTable(tableName) && !nameColMap.keySet().contains("uuid")) {
-							//TODO Add support for these tables
-							throw new RuntimeException("Table " + tableName + " has no uuid column");
-						}
 						
 						return new Table(tableName, keys, columnNames, insertColumns, nameColMap);
 					});
+					
+					if (!ImportUtils.isExtensionTable(table)) {
+						if (table.primaryKeys().size() != 1) {
+							throw new RuntimeException("Table " + tableName + " has unsupported primary key count "
+							        + table.primaryKeys().size());
+						}
+					}
+					
+					if (!ImportUtils.isSubclassTable(tableName) && !ImportUtils.isExtensionTable(table)
+					        && !table.columnNames().contains("uuid")) {
+						//TODO Add support for these tables
+						throw new RuntimeException("Table " + tableName + " has no uuid column");
+					}
 					
 					NAME_AND_TABLE_CACHE.put(tableName, table);
 				}

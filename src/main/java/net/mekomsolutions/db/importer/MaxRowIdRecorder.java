@@ -33,14 +33,23 @@ public class MaxRowIdRecorder {
 			log.trace("Resolving max row id from chunk of size {}", chunk.size());
 		}
 		
-		maxProcessedRowId = chunk.getItems().stream().map(r -> {
-			try {
-				return r.get().id();
+		//Resume support is currently not supported for extension and mapping tables because they are the ones
+		//where id would be null.
+		try {
+			if (chunk.getItems().get(0).get().id() != null) {
+				maxProcessedRowId = chunk.getItems().stream().map(r -> {
+					try {
+						return r.get().id();
+					}
+					catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}).max(Integer::compareTo).get();
 			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		}).max(Integer::compareTo).get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@AfterChunk
