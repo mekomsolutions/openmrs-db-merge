@@ -93,7 +93,7 @@ public class MetadataExtractor {
 						return new Table(tableName, keys, columnNames, insertColumns, nameColMap);
 					});
 					
-					if (!ImportUtils.isExtensionTable(table)) {
+					if (!ImportUtils.isExtensionTable(table) && !ImportUtils.isMappingTable(table)) {
 						if (table.primaryKeys().size() != 1) {
 							throw new RuntimeException("Table " + tableName + " has unsupported primary key count "
 							        + table.primaryKeys().size());
@@ -101,7 +101,7 @@ public class MetadataExtractor {
 					}
 					
 					if (!ImportUtils.isSubclassTable(tableName) && !ImportUtils.isExtensionTable(table)
-					        && !table.columnNames().contains("uuid")) {
+					        && !ImportUtils.isMappingTable(table) && !table.columnNames().contains("uuid")) {
 						//TODO Add support for these tables
 						throw new RuntimeException("Table " + tableName + " has no uuid column");
 					}
