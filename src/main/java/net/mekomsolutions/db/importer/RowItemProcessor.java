@@ -73,43 +73,7 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				Column column = table.getColumn(columnName);
 				ForeignKey fk = column.foreignKey();
 				if (fk != null) {
-					String refTableName = fk.referenceTable();
-					String refColName = fk.referencedColumn();
-					if (ImportUtils.isSubclassTable(refTableName)) {
-						Table refTable = metadataExtractor.getTable(refTableName);
-						ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
-						refTableName = parentFk.referenceTable();
-						refColName = parentFk.referencedColumn();
-					}
-					
-					if (log.isDebugEnabled()) {
-						log.debug("Getting row in the {} source table referenced by {}.{}", refTableName, table.name(),
-						    fk.columnName());
-					}
-					
-					Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
-					if (refUuid == null) {
-						String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
-						    refTableName, refColName, value);
-						throw new RuntimeException(msg);
-					}
-					
-					Object sinkValue;
-					//Synchronized block ensures no concurrent inserts of placeholders into a specific table to avoid 
-					//race conditions and possibly deadlocks.
-					//TODO we should possibly allow concurrent inserts of different rows.
-					synchronized (fk) {
-						//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
-						//repeatedly reference the same row
-						refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
-						sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
-						if (sinkValue == null) {
-							sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor,
-							    sinkDbHelper);
-						}
-					}
-					
-					value = sinkValue;
+					value = resolveForeignKeyValue(value, fk, table);
 				}
 			}
 			
@@ -117,6 +81,44 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 		}
 		
 		return values;
+	}
+	
+	private Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
+		String refTableName = fk.referenceTable();
+		String refColName = fk.referencedColumn();
+		if (ImportUtils.isSubclassTable(refTableName)) {
+			Table refTable = metadataExtractor.getTable(refTableName);
+			ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
+			refTableName = parentFk.referenceTable();
+			refColName = parentFk.referencedColumn();
+		}
+		
+		if (log.isDebugEnabled()) {
+			log.debug("Getting row in the {} source table referenced by {}.{}", refTableName, table.name(), fk.columnName());
+		}
+		
+		Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
+		if (refUuid == null) {
+			String msg = String.format("Failed to find referenced row in source table %s with %s = %s", refTableName,
+			    refColName, value);
+			throw new RuntimeException(msg);
+		}
+		
+		Object sinkValue;
+		//Synchronized block ensures no concurrent inserts of placeholders into a specific table to avoid
+		//race conditions and possibly deadlocks.
+		//TODO we should possibly allow concurrent inserts of different rows.
+		synchronized (fk) {
+			//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
+			//repeatedly reference the same row
+			refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
+			sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
+			if (sinkValue == null) {
+				sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor, sinkDbHelper);
+			}
+		}
+		
+		return sinkValue;
 	}
 	
 }
