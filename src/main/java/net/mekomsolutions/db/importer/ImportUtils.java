@@ -3,7 +3,9 @@ package net.mekomsolutions.db.importer;
 import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.sql.Types;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.batch.core.JobInstance;
@@ -204,6 +206,19 @@ public class ImportUtils {
 		
 		daemonUserId = (Integer) id;
 		return daemonUserId;
+	}
+	
+	/**
+	 * Marks a record as retried by setting retire related column values.
+	 *
+	 * @param item the record to be retired, represented as a map of key-value pairs
+	 * @param sinkDbHelper an instance of SinkDbHelper used to retrieve the daemon user ID
+	 */
+	protected static void retireRecord(Map<String, Object> item, SinkDbHelper sinkDbHelper) {
+		item.put("retired", true);
+		item.put("retired_by", getDaemonUserId(sinkDbHelper));
+		item.put("date_retired", LocalDateTime.now());
+		item.put("retire_reason", Constants.RETIRE_REASON);
 	}
 	
 }

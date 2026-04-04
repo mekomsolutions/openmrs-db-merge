@@ -31,4 +31,6 @@ public class Constants {
 	
 	public static final List<String> SUBCLASS_TABLES = List.of("patient", "drug_order", "test_order");
 	
+	public static final String RETIRE_REASON = "Duplicate upon migration";
+	
 }

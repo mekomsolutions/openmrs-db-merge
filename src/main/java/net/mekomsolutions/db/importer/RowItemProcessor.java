@@ -38,6 +38,13 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				log.debug("Processing: {}", key);
 			}
 			
+			if ("users".equalsIgnoreCase(baseTable.name())) {
+				boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
+				if (exists) {
+					ImportUtils.retireRecord(item, sinkDbHelper);
+				}
+			}
+			
 			final Object[] values = createColumnValues(baseTable, item);
 			Integer id = null;
 			if (baseTable.primaryKeys().size() == 1) {

@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
@@ -20,12 +23,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SinkDbHelper {
 	
+	private static final String USER_UNIQUE_COLUMNS = "uniqueCols";
+	
+	private static final String USER_EXISTS_QUERY = "SELECT COUNT(*) FROM users WHERE username IN (:" + USER_UNIQUE_COLUMNS
+	        + ") OR system_id IN (:" + USER_UNIQUE_COLUMNS + ")";
+	
 	protected JdbcTemplate jdbcTemplate;
+	
+	protected NamedParameterJdbcTemplate namedParamJdbcTemplate;
 	
 	protected MetadataExtractor metadataExtractor;
 	
-	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate, MetadataExtractor metadataExtractor) {
+	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate,
+	    NamedParameterJdbcTemplate namedParamJdbcTemplate, MetadataExtractor metadataExtractor) {
 		this.jdbcTemplate = jdbcTemplate;
+		this.namedParamJdbcTemplate = namedParamJdbcTemplate;
 		this.metadataExtractor = metadataExtractor;
 	}
 	
@@ -129,4 +141,27 @@ public class SinkDbHelper {
 		}
 	}
 	
+	/**
+	 * Checks whether a user exists in the system using the provided username or system_id. Note that
+	 * the username is matched against both the username and system_id columns, same for systemId.
+	 *
+	 * @param username the username to check
+	 * @param systemId the system_id to check
+	 * @return true if the user exists in the system, false otherwise.
+	 */
+	public boolean checkIfUserExists(Object username, Object systemId) {
+		if (log.isDebugEnabled()) {
+			log.debug("Checking existence of a user exists with username {} or system id {}", username, systemId);
+		}
+		
+		try {
+			SqlParameterSource params = new MapSqlParameterSource(USER_UNIQUE_COLUMNS, List.of(username, systemId));
+			return namedParamJdbcTemplate.queryForObject(USER_EXISTS_QUERY, params, Integer.class) > 0;
+		}
+		catch (Exception e) {
+			final String message = "Failed to check existence of user with username " + username + " and system id "
+			        + systemId;
+			throw new RuntimeException(message, e);
+		}
+	}
 }
