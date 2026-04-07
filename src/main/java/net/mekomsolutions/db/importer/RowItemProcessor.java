@@ -54,6 +54,10 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 			
 			return new Row(id, values);
 		}
+		catch (Throwable t) {
+			log.error("Error processing row:{} -> msg: {}", item, t.getMessage());
+			return null;
+		}
 		finally {
 			Thread.currentThread().setName(threadName);
 		}

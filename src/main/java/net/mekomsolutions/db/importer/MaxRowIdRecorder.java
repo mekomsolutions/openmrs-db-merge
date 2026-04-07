@@ -2,6 +2,8 @@ package net.mekomsolutions.db.importer;
 
 import static net.mekomsolutions.db.importer.Constants.STEP_KEY_MAX_PROCESSED_ID;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import org.springframework.batch.core.annotation.AfterChunk;
@@ -36,10 +38,18 @@ public class MaxRowIdRecorder {
 		//Resume support is currently not supported for extension and mapping tables because they are the ones
 		//where id would be null.
 		try {
-			if (chunk.getItems().get(0).get().id() != null) {
-				maxProcessedRowId = chunk.getItems().stream().map(r -> {
+			List<Row> rows = new ArrayList<>(chunk.size());
+			for (Future<Row> future : chunk.getItems()) {
+				Row row = future.get();
+				if (row != null) {
+					rows.add(row);
+				}
+			}
+			
+			if (rows.size() > 0 && rows.get(0).id() != null) {
+				maxProcessedRowId = rows.stream().map(r -> {
 					try {
-						return r.get().id();
+						return r.id();
 					}
 					catch (Exception e) {
 						throw new RuntimeException(e);

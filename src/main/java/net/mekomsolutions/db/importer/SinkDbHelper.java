@@ -25,8 +25,8 @@ public class SinkDbHelper {
 	
 	private static final String USER_UNIQUE_COLUMNS = "uniqueCols";
 	
-	private static final String USER_EXISTS_QUERY = "SELECT COUNT(*) FROM users WHERE username IN (:" + USER_UNIQUE_COLUMNS
-	        + ") OR system_id IN (:" + USER_UNIQUE_COLUMNS + ")";
+	private static final String USER_EXISTS_QUERY = "SELECT COUNT(*) FROM users WHERE LOWER(username) IN (:"
+	        + USER_UNIQUE_COLUMNS + ") OR LOWER(system_id) IN (:" + USER_UNIQUE_COLUMNS + ")";
 	
 	protected JdbcTemplate jdbcTemplate;
 	
@@ -142,12 +142,12 @@ public class SinkDbHelper {
 	}
 	
 	/**
-	 * Checks whether a user exists in the system using the provided username or system_id. Note that
+	 * Checks whether a user exists in the database with the specified username or system_id. Note that
 	 * the username is matched against both the username and system_id columns, same for systemId.
 	 *
 	 * @param username the username to check
 	 * @param systemId the system_id to check
-	 * @return true if the user exists in the system, false otherwise.
+	 * @return true if a user exists in the system, false otherwise.
 	 */
 	public boolean checkIfUserExists(Object username, Object systemId) {
 		if (log.isDebugEnabled()) {
@@ -155,7 +155,10 @@ public class SinkDbHelper {
 		}
 		
 		try {
-			SqlParameterSource params = new MapSqlParameterSource(USER_UNIQUE_COLUMNS, List.of(username, systemId));
+			final String usernameLower = username == null ? null : username.toString().toLowerCase();
+			final String systemIdLower = systemId.toString().toLowerCase();
+			SqlParameterSource params = new MapSqlParameterSource(USER_UNIQUE_COLUMNS,
+			        List.of(usernameLower, systemIdLower));
 			return namedParamJdbcTemplate.queryForObject(USER_EXISTS_QUERY, params, Integer.class) > 0;
 		}
 		catch (Exception e) {
@@ -164,4 +167,5 @@ public class SinkDbHelper {
 			throw new RuntimeException(message, e);
 		}
 	}
+	
 }
