@@ -59,6 +59,11 @@ public class DataSourceConfig {
 	}
 	
 	@Bean
+	public PlatformTransactionManager sinkTxManager(@Qualifier("sinkDataSource") DataSource ds) {
+		return new JdbcTransactionManager(ds);
+	}
+	
+	@Bean
 	public SpringLiquibase springLiquibase(@Qualifier("batchDataSource") DataSource ds) {
 		SpringLiquibase liquibase = new SpringLiquibase();
 		liquibase.setDataSource(ds);

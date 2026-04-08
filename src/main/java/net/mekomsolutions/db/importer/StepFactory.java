@@ -31,7 +31,6 @@ import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -55,21 +54,28 @@ public class StepFactory {
 	
 	private JobRepository jobRepository;
 	
-	private PlatformTransactionManager txManager;
+	private PlatformTransactionManager batchTxManager;
+	
+	private PlatformTransactionManager sinkTxManager;
 	
 	private DataSource sourceDataSource;
 	
 	private DataSource sinkDataSource;
 	
+	private DataSource batchDataSource;
+	
 	final private ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
 	
-	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager txManager,
-	    @Qualifier("sourceDataSource") DataSource sourceDataSource, @Qualifier("sinkDataSource") DataSource sinkDataSource) {
+	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager batchTxManager,
+	    PlatformTransactionManager sinkTxManager, DataSource sourceDataSource, DataSource sinkDataSource,
+	    DataSource batchDataSource) {
 		this.jobRepository = jobRepository;
 		this.jobExplorer = jobExplorer;
-		this.txManager = txManager;
+		this.batchTxManager = batchTxManager;
+		this.sinkTxManager = sinkTxManager;
 		this.sourceDataSource = sourceDataSource;
 		this.sinkDataSource = sinkDataSource;
+		this.batchDataSource = batchDataSource;
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
@@ -77,29 +83,33 @@ public class StepFactory {
 	                               SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper) {
 		
 		Table table = metadataExtractor.getTable(tableName);
-		ItemReader<Map<String, Object>> reader = createReader(table);
+		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createProcessor(table, metadataExtractor, sourceDbHelper,
 		    sinkDbHelper, importDbHelper);
-		ItemWriter<Future<Row>> writer = createWriter(table, prepStmtParamSetter);
+		final String writeSql = ImportUtils.getWriteSql(table);
+		ItemWriter<Future<Row>> writer = createWriter(writeSql, prepStmtParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
-		        .chunk(batchWriteSize, txManager);
+		        .chunk(batchWriteSize, sinkTxManager);
 		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder()).build();
 	}
 	
-	protected ItemReader<Map<String, Object>> createReader(Table table) {
-		Map<String, Order> sortKeys = table.primaryKeys().stream()
+	protected ItemReader<Map<String, Object>> createReader(String tableName, List<String> primaryKeys, DataSource dataSource,
+	                                                       boolean resumable) {
+		
+		Map<String, Order> sortKeys = primaryKeys.stream()
 		        .collect(Collectors.toMap(Function.identity(), s -> Order.ASCENDING));
-		String name = table.name();
-		final JdbcPagingItemReaderBuilder<Map<String, Object>> builder = new JdbcPagingItemReaderBuilder();
-		builder.name(name).dataSource(sourceDataSource).selectClause("SELECT *").fromClause("FROM " + name)
+		JdbcPagingItemReaderBuilder<Map<String, Object>> builder = new JdbcPagingItemReaderBuilder();
+		builder.name(tableName).dataSource(dataSource).selectClause("SELECT *").fromClause("FROM " + tableName)
 		        .sortKeys(sortKeys).pageSize(batchReadSize).rowMapper(ROW_MAPPER);
-		final Object maxProcessedRowId = ImportUtils.getMaxRowId(jobExplorer, jobRepository, name);
-		if (maxProcessedRowId != null) {
-			log.info("Importing rows from {} table with {} > {}", name, table.primaryKeys().get(0), maxProcessedRowId);
-			builder.whereClause(table.primaryKeys().get(0) + " > " + maxProcessedRowId);
+		if (resumable) {
+			final Object maxProcessedRowId = ImportUtils.getMaxRowId(jobExplorer, jobRepository, tableName);
+			if (maxProcessedRowId != null) {
+				log.info("Importing rows from {} table with {} > {}", tableName, primaryKeys.get(0), maxProcessedRowId);
+				builder.whereClause(primaryKeys.get(0) + " > " + maxProcessedRowId);
+			}
 		}
 		
-		final JdbcPagingItemReader<Map<String, Object>> reader = builder.build();
+		JdbcPagingItemReader<Map<String, Object>> reader = builder.build();
 		try {
 			reader.afterPropertiesSet();
 		}
@@ -136,9 +146,8 @@ public class StepFactory {
 		return asyncProcessor;
 	}
 	
-	protected ItemWriter<Future<Row>> createWriter(Table table, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
+	protected ItemWriter<Future<Row>> createWriter(String sql, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
-		final String sql = ImportUtils.getWriteSql(table);
 		JdbcBatchItemWriter<Row> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
 		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
 		
@@ -174,8 +183,8 @@ public class StepFactory {
 			excludes.add(line.trim().toLowerCase(Locale.ENGLISH));
 		}
 		
-		List<String> tables = metadataExtractor.getTableNames();
-		List<Step> steps = new ArrayList<>();
+		List<String> tables = new ArrayList(metadataExtractor.getTableNames());
+		List<Step> steps = new ArrayList<>(tables.size());
 		//Skip excluded and empty tables
 		tables.stream().filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).forEach(t -> steps.add(
 		    createTableStep(t, metadataExtractor, prepStmtParamSetter, sourceDbHelper, sinkDbHelper, importDbHelper)));
