@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.ArrayPreparedStatementParamSetter;
 import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.ImportDbHelper;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.SinkDbHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
@@ -38,11 +39,12 @@ public class BatchConfig {
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
 	                     ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
-	                     SinkDbHelper sinkDbHelper)
+	                     SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
-		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper);
+		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, sinkDbHelper,
+		    importDbHelper);
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {
 			if (builder == null) {

@@ -19,12 +19,15 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	
 	private SinkDbHelper sinkDbHelper;
 	
+	private ImportDbHelper importDbHelper;
+	
 	public RowItemProcessor(Table baseTable, MetadataExtractor metadataExtractor, SourceDbHelper sourceDbHelper,
-	    SinkDbHelper sinkDbHelper) {
+	    SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper) {
 		this.baseTable = baseTable;
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
+		this.importDbHelper = importDbHelper;
 	}
 	
 	@Override
@@ -55,7 +58,11 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 			return new Row(id, values);
 		}
 		catch (Throwable t) {
-			log.error("Error processing row:{} -> msg: {}", item, t.getMessage());
+			if (log.isWarnEnabled()) {
+				log.warn("Error processing row:{} -> msg: {}", item, t.getMessage());
+			}
+			
+			ImportUtils.handleFailure(baseTable, item, t, importDbHelper);
 			return null;
 		}
 		finally {

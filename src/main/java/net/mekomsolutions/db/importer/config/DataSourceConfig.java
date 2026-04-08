@@ -49,6 +49,11 @@ public class DataSourceConfig {
 	}
 	
 	@Bean
+	public JdbcTemplate batchJdbcTemplate(@Qualifier("batchDataSource") DataSource ds) {
+		return new JdbcTemplate(ds);
+	}
+	
+	@Bean
 	public PlatformTransactionManager batchTxManager(@Qualifier("batchDataSource") DataSource ds) {
 		return new JdbcTransactionManager(ds);
 	}

@@ -33,4 +33,6 @@ public class Constants {
 	
 	public static final String RETIRE_REASON = "Duplicate upon migration";
 	
+	public static final String FAILED_ITEM_TABLE = "failed_import_item";
+	
 }

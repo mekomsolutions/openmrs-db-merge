@@ -11,4 +11,28 @@
         <sqlFile path="classpath:org/springframework/batch/core/schema-mysql.sql"/>
     </changeSet>
 
+    <changeSet id="2026-04-07-19-00" author="wluyima">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="failed_import_item"/>
+            </not>
+        </preConditions>
+        <comment>Add failed_import_item table</comment>
+        <createTable tableName="failed_import_item">
+            <column name="id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="table_name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="primary_key" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_type" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_msg" type="VARCHAR(2048)"/>
+        </createTable>
+    </changeSet>
+
 </databaseChangeLog>

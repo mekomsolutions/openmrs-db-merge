@@ -8,15 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ImportUtils {
+	
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	private static Integer daemonUserId;
 	
@@ -151,6 +156,31 @@ public class ImportUtils {
 		}
 		
 		return null;
+	}
+	
+	protected static void handleFailure(Table table, Map<String, Object> item, Throwable throwable,
+	                                    ImportDbHelper importDbHelper)
+	    throws Exception {
+		String primaryKey;
+		if (table.primaryKeys().size() == 1) {
+			primaryKey = item.get(table.primaryKeys().get(0)).toString();
+		} else {
+			Map<String, Object> keyMaps = item.entrySet().stream().filter(e -> table.primaryKeys().contains(e.getKey()))
+			        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			primaryKey = MAPPER.writeValueAsString(keyMaps);
+		}
+		
+		Throwable cause = ExceptionUtils.getRootCause(throwable);
+		if (cause == null) {
+			cause = throwable;
+		}
+		
+		String errMsg = cause.getMessage();
+		if (errMsg.length() > 1024) {
+			errMsg = errMsg.substring(0, 2048);
+		}
+		
+		importDbHelper.addFailedItem(table.name(), primaryKey, cause.getClass().getName(), errMsg);
 	}
 	
 	private static Integer getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {

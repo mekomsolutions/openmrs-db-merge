@@ -135,8 +135,7 @@ public class SinkDbHelper {
 			return rowId;
 		}
 		catch (Exception e) {
-			final String msg = String.format("Error occurred while inserting a row into table %s: %s", tableName,
-			    e.getMessage());
+			final String msg = String.format("Error occurred while inserting a row into table %s", tableName);
 			throw new RuntimeException(msg, e);
 		}
 	}

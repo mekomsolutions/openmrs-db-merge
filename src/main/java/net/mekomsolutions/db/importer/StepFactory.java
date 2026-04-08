@@ -74,12 +74,12 @@ public class StepFactory {
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
 	                               ArrayPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper,
-	                               SinkDbHelper sinkDbHelper) {
+	                               SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper) {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(table);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createProcessor(table, metadataExtractor, sourceDbHelper,
-		    sinkDbHelper);
+		    sinkDbHelper, importDbHelper);
 		ItemWriter<Future<Row>> writer = createWriter(table, prepStmtParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, txManager);
@@ -113,9 +113,11 @@ public class StepFactory {
 	protected ItemProcessor<Map<String, Object>, Future<Row>> createProcessor(Table table,
 	                                                                          MetadataExtractor metadataExtractor,
 	                                                                          SourceDbHelper sourceDbHelper,
-	                                                                          SinkDbHelper sinkDbHelper) {
+	                                                                          SinkDbHelper sinkDbHelper,
+	                                                                          ImportDbHelper importDbHelper) {
+		
 		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, metadataExtractor, sourceDbHelper,
-		        sinkDbHelper);
+		        sinkDbHelper, importDbHelper);
 		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
 		asyncProcessor.setDelegate(processor);
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -160,7 +162,7 @@ public class StepFactory {
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor, ArrayPreparedStatementParamSetter prepStmtParamSetter,
-	                           SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper)
+	                           SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
@@ -175,8 +177,8 @@ public class StepFactory {
 		List<String> tables = metadataExtractor.getTableNames();
 		List<Step> steps = new ArrayList<>();
 		//Skip excluded and empty tables
-		tables.stream().filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).forEach(
-		    t -> steps.add(createTableStep(t, metadataExtractor, prepStmtParamSetter, sourceDbHelper, sinkDbHelper)));
+		tables.stream().filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).forEach(t -> steps.add(
+		    createTableStep(t, metadataExtractor, prepStmtParamSetter, sourceDbHelper, sinkDbHelper, importDbHelper)));
 		
 		log.info("Importing {} tables", steps.size());
 		
