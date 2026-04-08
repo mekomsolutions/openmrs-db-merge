@@ -1,5 +1,6 @@
 package net.mekomsolutions.db.importer;
 
+import static net.mekomsolutions.db.importer.Constants.ERROR_MSG_COLUMN_SIZE;
 import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.sql.Types;
@@ -176,11 +177,11 @@ public class ImportUtils {
 		}
 		
 		String errMsg = cause.getMessage();
-		if (errMsg.length() > 1024) {
-			errMsg = errMsg.substring(0, 2048);
+		if (errMsg.length() > ERROR_MSG_COLUMN_SIZE) {
+			errMsg = errMsg.substring(0, ERROR_MSG_COLUMN_SIZE);
 		}
 		
-		importDbHelper.addFailedItem(table.name(), primaryKey, cause.getClass().getName(), errMsg);
+		importDbHelper.saveFailedItem(table.name(), primaryKey, cause.getClass().getName(), errMsg);
 	}
 	
 	private static Integer getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {

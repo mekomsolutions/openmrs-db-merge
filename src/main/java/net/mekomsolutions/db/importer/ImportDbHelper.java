@@ -30,7 +30,7 @@ public class ImportDbHelper {
 	 * @param errorType the fully qualified java class name of the throws exception
 	 * @param errorMessage the error message
 	 */
-	public void addFailedItem(String tableName, String primaryKey, String errorType, String errorMessage) {
+	public void saveFailedItem(String tableName, String primaryKey, String errorType, String errorMessage) {
 		if (log.isDebugEnabled()) {
 			log.debug("Inserting a row into the {} for row in table {} with primary key {}", FAILED_ITEM_TABLE, tableName,
 			    primaryKey);

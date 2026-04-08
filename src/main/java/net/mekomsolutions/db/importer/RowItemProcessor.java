@@ -41,24 +41,10 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 				log.debug("Processing: {}", key);
 			}
 			
-			if ("users".equalsIgnoreCase(baseTable.name())) {
-				boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
-				if (exists) {
-					ImportUtils.retireRecord(item, sinkDbHelper);
-				}
-			}
-			
-			final Object[] values = createColumnValues(baseTable, item);
-			Integer id = null;
-			if (baseTable.primaryKeys().size() == 1) {
-				String pkColumnName = baseTable.primaryKeys().get(0);
-				id = (Integer) item.get(pkColumnName);
-			}
-			
-			return new Row(id, values);
+			return doProcess(baseTable, item);
 		}
 		catch (Throwable t) {
-			if (log.isWarnEnabled()) {
+			if (log.isDebugEnabled()) {
 				log.warn("Error processing row:{} -> msg: {}", item, t.getMessage());
 			}
 			
@@ -68,6 +54,24 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 		finally {
 			Thread.currentThread().setName(threadName);
 		}
+	}
+	
+	public Row doProcess(Table table, Map<String, Object> item) throws Exception {
+		if ("users".equalsIgnoreCase(table.name())) {
+			boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
+			if (exists) {
+				ImportUtils.retireRecord(item, sinkDbHelper);
+			}
+		}
+		
+		final Object[] values = createColumnValues(table, item);
+		Integer id = null;
+		if (table.primaryKeys().size() == 1) {
+			String pkColumnName = table.primaryKeys().get(0);
+			id = (Integer) item.get(pkColumnName);
+		}
+		
+		return new Row(id, values);
 	}
 	
 	/**

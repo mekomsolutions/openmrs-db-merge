@@ -35,4 +35,6 @@ public class Constants {
 	
 	public static final String FAILED_ITEM_TABLE = "failed_import_item";
 	
+	public static final Integer ERROR_MSG_COLUMN_SIZE = 2048;
+	
 }
