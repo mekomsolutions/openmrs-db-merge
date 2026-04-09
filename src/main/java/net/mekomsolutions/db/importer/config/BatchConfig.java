@@ -17,9 +17,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import net.mekomsolutions.db.importer.ArrayPreparedStatementParamSetter;
 import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.RowPreparedStatementParamSetter;
 import net.mekomsolutions.db.importer.RowProcessorHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
 import net.mekomsolutions.db.importer.StepFactory;
@@ -37,7 +37,7 @@ public class BatchConfig {
 	
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
-	                     ArrayPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
+	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper)
 	    throws Exception {
 		

@@ -20,7 +20,7 @@ public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, 
 	
 	@Override
 	public Row process(Map<String, Object> item) throws Exception {
-		return helper.process(baseTable, item);
+		return helper.process(baseTable, item, false);
 	}
 	
 }

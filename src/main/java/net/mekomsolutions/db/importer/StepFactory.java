@@ -1,5 +1,7 @@
 package net.mekomsolutions.db.importer;
 
+import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -26,6 +28,7 @@ import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcPagingItemReader;
 import org.springframework.batch.item.database.Order;
@@ -49,6 +52,9 @@ public class StepFactory {
 	
 	@Value("${batch.write.size:50}")
 	private Integer batchWriteSize;
+	
+	@Value("${failed.items.retry:false}")
+	private boolean retry;
 	
 	private JobExplorer jobExplorer;
 	
@@ -79,8 +85,7 @@ public class StepFactory {
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
-	                               ArrayPreparedStatementParamSetter prepStmtParamSetter,
-	                               RowProcessorHelper processorHelper) {
+	                               RowPreparedStatementParamSetter prepStmtParamSetter, RowProcessorHelper processorHelper) {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
@@ -139,7 +144,7 @@ public class StepFactory {
 		return asyncProcessor;
 	}
 	
-	protected ItemWriter<Future<Row>> createWriter(String sql, ArrayPreparedStatementParamSetter prepStmtParamSetter) {
+	protected ItemWriter<Future<Row>> createWriter(String sql, ItemPreparedStatementSetter<?> prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
 		JdbcBatchItemWriter<Row> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
 		        .itemPreparedStatementSetter(prepStmtParamSetter).build();
@@ -163,7 +168,17 @@ public class StepFactory {
 		return asyncWriter;
 	}
 	
-	public List<Step> getSteps(MetadataExtractor metadataExtractor, ArrayPreparedStatementParamSetter prepStmtParamSetter,
+	public Step createRetryStep() {
+		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
+		ItemProcessor<Map<String, Object>, Future<Row>> processor = null;
+		final String deleteSql = "DELETE FROM " + FAILED_ITEM_TABLE + " WHERE id = ?";
+		ItemWriter<Future<Row>> writer = createWriter(deleteSql, null);
+		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
+		        .chunk(batchWriteSize, batchTxManager);
+		return builder.reader(reader).processor(processor).writer(writer).build();
+	}
+	
+	public List<Step> getSteps(MetadataExtractor metadataExtractor, RowPreparedStatementParamSetter prepStmtParamSetter,
 	                           SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper)
 	    throws IOException {
 		
@@ -183,6 +198,10 @@ public class StepFactory {
 		        .forEach(t -> steps.add(createTableStep(t, metadataExtractor, prepStmtParamSetter, processorHelper)));
 		
 		log.info("Importing {} tables", steps.size());
+		
+		if (retry) {
+			steps.add(createRetryStep());
+		}
 		
 		return steps;
 	}

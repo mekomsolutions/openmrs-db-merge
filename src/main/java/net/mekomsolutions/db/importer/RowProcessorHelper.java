@@ -28,12 +28,13 @@ public class RowProcessorHelper {
 		this.importDbHelper = importDbHelper;
 	}
 	
-	public Row process(Table baseTable, Map<String, Object> item) throws Exception {
+	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) throws Exception {
 		String threadName = Thread.currentThread().getName();
+		final String threadNamePrefix = isRetry ? "retry:" : "import";
 		try {
 			final String key = baseTable.primaryKeys().stream().map(k -> item.get(k).toString())
 			        .collect(Collectors.joining(","));
-			Thread.currentThread().setName(baseTable.name() + ":" + key);
+			Thread.currentThread().setName(threadNamePrefix + baseTable.name() + ":" + key);
 			if (log.isDebugEnabled()) {
 				log.debug("Processing: {}", key);
 			}
@@ -45,7 +46,10 @@ public class RowProcessorHelper {
 				log.warn("Error processing row:{} -> msg: {}", item, t.getMessage());
 			}
 			
-			ImportUtils.handleFailure(baseTable, item, t, importDbHelper);
+			if (!isRetry) {
+				ImportUtils.handleFailure(baseTable, item, t, importDbHelper);
+			}
+			
 			return null;
 		}
 		finally {
