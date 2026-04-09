@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ArrayPreparedStatementParamSetter implements ItemPreparedStatementSetter<Row> {
+public class RowPreparedStatementParamSetter implements ItemPreparedStatementSetter<Row> {
 	
 	@Override
 	public void setValues(Row row, PreparedStatement ps) throws SQLException {

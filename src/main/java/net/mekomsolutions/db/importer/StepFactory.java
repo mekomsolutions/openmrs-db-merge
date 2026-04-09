@@ -44,6 +44,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StepFactory {
 	
+	private final ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
+	
+	private final RetryPreparedStatementParamSetter RETRY_STMT_PARAM_SETTER = new RetryPreparedStatementParamSetter();
+	
 	@Value("${tables.exclude.file.path}")
 	private File excludeTablesFile;
 	
@@ -69,8 +73,6 @@ public class StepFactory {
 	private DataSource sinkDataSource;
 	
 	private DataSource batchDataSource;
-	
-	final private ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
 	
 	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager batchTxManager,
 	    PlatformTransactionManager sinkTxManager, DataSource sourceDataSource, DataSource sinkDataSource,
@@ -168,9 +170,34 @@ public class StepFactory {
 		return asyncWriter;
 	}
 	
-	public Step createRetryStep() {
+	protected ItemProcessor<Map<String, Object>, Future<Row>> createRetryProcessor(SourceDbHelper sourceDbHelper,
+	                                                                               RowProcessorHelper processorHelper,
+	                                                                               MetadataExtractor metadataExtractor) {
+		ItemProcessor<Map<String, Object>, Row> processor = new RetryItemProcessor(sourceDbHelper, processorHelper,
+		        metadataExtractor);
+		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
+		asyncProcessor.setDelegate(processor);
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		//TODO Make configurable
+		executor.setCorePoolSize(32);
+		executor.setMaxPoolSize(32);
+		executor.initialize();
+		asyncProcessor.setTaskExecutor(executor);
+		try {
+			asyncProcessor.afterPropertiesSet();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		return asyncProcessor;
+	}
+	
+	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
+	                            MetadataExtractor metadataExtractor) {
 		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
-		ItemProcessor<Map<String, Object>, Future<Row>> processor = null;
+		ItemProcessor<Map<String, Object>, Future<Row>> processor = createRetryProcessor(sourceDbHelper, processorHelper,
+		    metadataExtractor);
 		final String deleteSql = "DELETE FROM " + FAILED_ITEM_TABLE + " WHERE id = ?";
 		ItemWriter<Future<Row>> writer = createWriter(deleteSql, null);
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
@@ -200,7 +227,7 @@ public class StepFactory {
 		log.info("Importing {} tables", steps.size());
 		
 		if (retry) {
-			steps.add(createRetryStep());
+			steps.add(createRetryStep(sourceDbHelper, processorHelper, metadataExtractor));
 		}
 		
 		return steps;
