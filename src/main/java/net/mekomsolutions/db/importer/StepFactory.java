@@ -91,7 +91,7 @@ public class StepFactory {
 		
 		Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
-		ItemProcessor<Map<String, Object>, Future<Row>> processor = createProcessor(table, processorHelper);
+		ItemProcessor<Map<String, Object>, Future<Row>> processor = createRowProcessor(table, processorHelper);
 		final String writeSql = ImportUtils.getWriteSql(table);
 		ItemWriter<Future<Row>> writer = createWriter(writeSql, prepStmtParamSetter);
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
@@ -126,26 +126,6 @@ public class StepFactory {
 		return reader;
 	}
 	
-	protected ItemProcessor<Map<String, Object>, Future<Row>> createProcessor(Table table, RowProcessorHelper helper) {
-		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, helper);
-		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
-		asyncProcessor.setDelegate(processor);
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		//TODO Make configurable
-		executor.setCorePoolSize(32);
-		executor.setMaxPoolSize(32);
-		executor.initialize();
-		asyncProcessor.setTaskExecutor(executor);
-		try {
-			asyncProcessor.afterPropertiesSet();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-		return asyncProcessor;
-	}
-	
 	protected ItemWriter<Future<Row>> createWriter(String sql, ItemPreparedStatementSetter<?> prepStmtParamSetter) {
 		//TODO Disable assertUpdates so that we handle failures somewhere else
 		JdbcBatchItemWriter<Row> writer = new JdbcBatchItemWriterBuilder().dataSource(sinkDataSource).sql(sql)
@@ -168,29 +148,6 @@ public class StepFactory {
 		}
 		
 		return asyncWriter;
-	}
-	
-	protected ItemProcessor<Map<String, Object>, Future<Row>> createRetryProcessor(SourceDbHelper sourceDbHelper,
-	                                                                               RowProcessorHelper processorHelper,
-	                                                                               MetadataExtractor metadataExtractor) {
-		ItemProcessor<Map<String, Object>, Row> processor = new RetryItemProcessor(sourceDbHelper, processorHelper,
-		        metadataExtractor);
-		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
-		asyncProcessor.setDelegate(processor);
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		//TODO Make configurable
-		executor.setCorePoolSize(32);
-		executor.setMaxPoolSize(32);
-		executor.initialize();
-		asyncProcessor.setTaskExecutor(executor);
-		try {
-			asyncProcessor.afterPropertiesSet();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		
-		return asyncProcessor;
 	}
 	
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
@@ -231,6 +188,39 @@ public class StepFactory {
 		}
 		
 		return steps;
+	}
+	
+	private ItemProcessor<Map<String, Object>, Future<Row>> createRowProcessor(Table table, RowProcessorHelper helper) {
+		ItemProcessor<Map<String, Object>, Row> processor = new RowItemProcessor(table, helper);
+		return createAsyncProcessor(processor);
+	}
+	
+	private ItemProcessor<Map<String, Object>, Future<Row>> createRetryProcessor(SourceDbHelper sourceDbHelper,
+	                                                                             RowProcessorHelper processorHelper,
+	                                                                             MetadataExtractor metadataExtractor) {
+		
+		ItemProcessor<Map<String, Object>, Row> processor = new RetryItemProcessor(sourceDbHelper, processorHelper,
+		        metadataExtractor);
+		return createAsyncProcessor(processor);
+	}
+	
+	private ItemProcessor<Map<String, Object>, Future<Row>> createAsyncProcessor(ItemProcessor<Map<String, Object>, Row> delegate) {
+		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
+		asyncProcessor.setDelegate(delegate);
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		//TODO Make configurable
+		executor.setCorePoolSize(32);
+		executor.setMaxPoolSize(32);
+		executor.initialize();
+		asyncProcessor.setTaskExecutor(executor);
+		try {
+			asyncProcessor.afterPropertiesSet();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		
+		return asyncProcessor;
 	}
 	
 }
