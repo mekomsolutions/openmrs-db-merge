@@ -151,19 +151,20 @@ public class StepFactory {
 	}
 	
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
-	                            MetadataExtractor metadataExtractor) {
+	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover) {
 		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
 		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createRetryProcessor(sourceDbHelper, processorHelper,
 		    metadataExtractor);
-		//final String deleteSql = "DELETE FROM " + FAILED_ITEM_TABLE + " WHERE id = ?";
-		ItemWriter<Future<Retry>> writer = createRetryWriter();
+		//Note that we still use the sinkTxManager because the row being retried is written to the sink DB and the
+		//retry deletion process happens outside this TX i.e. after the chunk is committed.
 		SimpleStepBuilder<Map<String, Object>, Future<Retry>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
-		        .chunk(batchWriteSize, batchTxManager);
-		return builder.reader(reader).processor(processor).writer(writer).build();
+		        .chunk(batchWriteSize, sinkTxManager);
+		return builder.reader(reader).processor(processor).writer(retryWriter).listener(retryRemover).build();
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor, RowPreparedStatementParamSetter prepStmtParamSetter,
-	                           SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper)
+	                           SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper, RetryWriter retryWriter,
+	                           RetryRemover retryRemover)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
@@ -184,7 +185,7 @@ public class StepFactory {
 		log.info("Importing {} tables", steps.size());
 		
 		if (retry) {
-			steps.add(createRetryStep(sourceDbHelper, processorHelper, metadataExtractor));
+			steps.add(createRetryStep(sourceDbHelper, processorHelper, metadataExtractor, retryWriter, retryRemover));
 		}
 		
 		return steps;
@@ -221,10 +222,6 @@ public class StepFactory {
 		}
 		
 		return asyncProcessor;
-	}
-	
-	protected ItemWriter<Future<Retry>> createRetryWriter() {
-		return new RetryWriter(this, new RowPreparedStatementParamSetter());
 	}
 	
 }

@@ -19,6 +19,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.RetryRemover;
+import net.mekomsolutions.db.importer.RetryWriter;
 import net.mekomsolutions.db.importer.RowPreparedStatementParamSetter;
 import net.mekomsolutions.db.importer.RowProcessorHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
@@ -38,12 +40,12 @@ public class BatchConfig {
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
-	                     RowProcessorHelper processorHelper)
+	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
-		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper,
-		    processorHelper);
+		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, processorHelper,
+		    retryWriter, retryRemover);
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {
 			if (builder == null) {
