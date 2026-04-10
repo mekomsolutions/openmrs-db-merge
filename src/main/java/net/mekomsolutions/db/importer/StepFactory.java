@@ -153,11 +153,11 @@ public class StepFactory {
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
 	                            MetadataExtractor metadataExtractor) {
 		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
-		ItemProcessor<Map<String, Object>, Future<Row>> processor = createRetryProcessor(sourceDbHelper, processorHelper,
+		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createRetryProcessor(sourceDbHelper, processorHelper,
 		    metadataExtractor);
-		final String deleteSql = "DELETE FROM " + FAILED_ITEM_TABLE + " WHERE id = ?";
-		ItemWriter<Future<Row>> writer = createWriter(deleteSql, null);
-		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
+		//final String deleteSql = "DELETE FROM " + FAILED_ITEM_TABLE + " WHERE id = ?";
+		ItemWriter<Future<Retry>> writer = createRetryWriter();
+		SimpleStepBuilder<Map<String, Object>, Future<Retry>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
 		        .chunk(batchWriteSize, batchTxManager);
 		return builder.reader(reader).processor(processor).writer(writer).build();
 	}
@@ -195,16 +195,16 @@ public class StepFactory {
 		return createAsyncProcessor(processor);
 	}
 	
-	private ItemProcessor<Map<String, Object>, Future<Row>> createRetryProcessor(SourceDbHelper sourceDbHelper,
-	                                                                             RowProcessorHelper processorHelper,
-	                                                                             MetadataExtractor metadataExtractor) {
+	private ItemProcessor<Map<String, Object>, Future<Retry>> createRetryProcessor(SourceDbHelper sourceDbHelper,
+	                                                                               RowProcessorHelper processorHelper,
+	                                                                               MetadataExtractor metadataExtractor) {
 		
-		ItemProcessor<Map<String, Object>, Row> processor = new RetryItemProcessor(sourceDbHelper, processorHelper,
+		ItemProcessor<Map<String, Object>, Retry> processor = new RetryItemProcessor(sourceDbHelper, processorHelper,
 		        metadataExtractor);
 		return createAsyncProcessor(processor);
 	}
 	
-	private ItemProcessor<Map<String, Object>, Future<Row>> createAsyncProcessor(ItemProcessor<Map<String, Object>, Row> delegate) {
+	private <T> ItemProcessor<Map<String, Object>, Future<T>> createAsyncProcessor(ItemProcessor<Map<String, Object>, T> delegate) {
 		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
 		asyncProcessor.setDelegate(delegate);
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -221,6 +221,10 @@ public class StepFactory {
 		}
 		
 		return asyncProcessor;
+	}
+	
+	protected ItemWriter<Future<Retry>> createRetryWriter() {
+		return new RetryWriter(this, new RowPreparedStatementParamSetter());
 	}
 	
 }
