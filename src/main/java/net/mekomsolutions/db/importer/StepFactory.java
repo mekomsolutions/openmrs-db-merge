@@ -46,8 +46,6 @@ public class StepFactory {
 	
 	private final ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
 	
-	private final RetryPreparedStatementParamSetter RETRY_STMT_PARAM_SETTER = new RetryPreparedStatementParamSetter();
-	
 	@Value("${tables.exclude.file.path}")
 	private File excludeTablesFile;
 	

@@ -15,14 +15,10 @@ import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ImportUtils {
-	
-	private static final ObjectMapper MAPPER = new ObjectMapper();
 	
 	private static Integer daemonUserId;
 	
@@ -160,15 +156,13 @@ public class ImportUtils {
 	}
 	
 	protected static void handleFailure(Table table, Map<String, Object> item, Throwable throwable,
-	                                    ImportDbHelper importDbHelper)
-	    throws Exception {
+	                                    ImportDbHelper importDbHelper) {
+		
 		String primaryKey;
 		if (table.primaryKeys().size() == 1) {
 			primaryKey = item.get(table.primaryKeys().get(0)).toString();
 		} else {
-			Map<String, Object> keyMaps = item.entrySet().stream().filter(e -> table.primaryKeys().contains(e.getKey()))
-			        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-			primaryKey = MAPPER.writeValueAsString(keyMaps);
+			primaryKey = table.primaryKeys().stream().map(k -> item.get(k).toString()).collect(Collectors.joining("#"));
 		}
 		
 		Throwable cause = ExceptionUtils.getRootCause(throwable);

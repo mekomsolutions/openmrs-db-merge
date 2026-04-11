@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -166,6 +167,10 @@ public class MetadataExtractor {
 			while (rs.next()) {
 				primaryKeys.add(rs.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH));
 			}
+		}
+		
+		if (primaryKeys.size() > 1) {
+			Collections.sort(primaryKeys);
 		}
 		
 		return primaryKeys;
