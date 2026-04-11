@@ -46,7 +46,7 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 			return null;
 		}
 		
-		return new Retry(id, rowId, baseTable, row);
+		return new Retry(id, baseTable, rowId, row);
 	}
 	
 }
