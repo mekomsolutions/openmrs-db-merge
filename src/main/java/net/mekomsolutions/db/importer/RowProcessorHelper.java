@@ -43,9 +43,10 @@ public class RowProcessorHelper {
 		}
 		catch (Throwable t) {
 			if (log.isDebugEnabled()) {
-				log.warn("Error processing row:{} -> msg: {}", item, t.getMessage());
+				log.error("Error processing row:{} -> msg: {}", item, t);
 			}
 			
+			//TODO Future for a retry update error type and message
 			if (!isRetry) {
 				ImportUtils.handleFailure(baseTable, item, t, importDbHelper);
 			}

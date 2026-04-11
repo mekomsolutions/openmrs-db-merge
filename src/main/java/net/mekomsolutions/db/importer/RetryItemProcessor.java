@@ -1,7 +1,9 @@
 package net.mekomsolutions.db.importer;
 
+import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.batch.item.adapter.ItemProcessorAdapter;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +30,26 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		final String baseTableName = (String) item.get("table_name");
 		final String rowId = (String) item.get("identifier");
 		final Table baseTable = metadataExtractor.getTable(baseTableName);
-		final String primaryKeyCol = baseTable.primaryKeys().get(0);
 		if (log.isDebugEnabled()) {
 			final String idLabel = ImportUtils.getIdentifierLabel(baseTable);
 			log.debug("Retrying row in table {} with {} = {}", baseTableName, idLabel, rowId);
 		}
 		
-		Map<String, Object> rowData = sourceDbHelper.getRow(baseTableName, primaryKeyCol, rowId);
+		List<String> idCols;
+		Object[] ids;
+		if (baseTable.primaryKeys().size() == 1) {
+			idCols = baseTable.primaryKeys();
+			ids = new Object[] { DbUtils.convert(rowId, baseTable.getColumn(idCols.get(0)).sqlType()) };
+		} else {
+			idCols = baseTable.primaryKeys();
+			String[] idsArray = StringUtils.split(rowId, Constants.COMPOSITE_ID_SEPARATOR);
+			ids = new Object[idCols.size()];
+			for (int i = 0; i < idCols.size(); i++) {
+				ids[i] = DbUtils.convert(idsArray[i], baseTable.getColumn(idCols.get(i)).sqlType());
+			}
+		}
+		
+		Map<String, Object> rowData = sourceDbHelper.getRow(baseTableName, idCols, ids);
 		Row row = helper.process(baseTable, rowData, true);
 		if (row == null) {
 			if (log.isDebugEnabled()) {

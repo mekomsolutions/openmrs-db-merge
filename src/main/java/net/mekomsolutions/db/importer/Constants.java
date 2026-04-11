@@ -37,4 +37,6 @@ public class Constants {
 	
 	public static final Integer ERROR_MSG_COLUMN_SIZE = 2048;
 	
+	public static final String COMPOSITE_ID_SEPARATOR = "#";
+	
 }

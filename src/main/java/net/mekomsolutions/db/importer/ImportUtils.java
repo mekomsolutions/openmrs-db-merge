@@ -1,5 +1,6 @@
 package net.mekomsolutions.db.importer;
 
+import static net.mekomsolutions.db.importer.Constants.COMPOSITE_ID_SEPARATOR;
 import static net.mekomsolutions.db.importer.Constants.ERROR_MSG_COLUMN_SIZE;
 import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
@@ -232,18 +233,19 @@ public class ImportUtils {
 		if (table.primaryKeys().size() == 1) {
 			label = table.primaryKeys().get(0);
 		} else {
-			label = table.primaryKeys().stream().collect(Collectors.joining("#"));
+			label = table.primaryKeys().stream().collect(Collectors.joining(COMPOSITE_ID_SEPARATOR));
 		}
 		
 		return label;
 	}
 	
-	protected static String getIdentifier(Table table, Map<String, Object> row) {
+	private static String getIdentifier(Table table, Map<String, Object> row) {
 		String identifier;
 		if (table.primaryKeys().size() == 1) {
 			identifier = row.get(table.primaryKeys().get(0)).toString();
 		} else {
-			identifier = table.primaryKeys().stream().map(k -> row.get(k).toString()).collect(Collectors.joining("#"));
+			identifier = table.primaryKeys().stream().map(k -> row.get(k).toString())
+			        .collect(Collectors.joining(COMPOSITE_ID_SEPARATOR));
 		}
 		
 		return identifier;

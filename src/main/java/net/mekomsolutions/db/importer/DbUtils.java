@@ -32,4 +32,24 @@ public class DbUtils {
 		return value;
 	}
 	
+	/**
+	 * Converts a string value to an appropriate object of the specified SQL type.
+	 *
+	 * @param value the string value to be converted
+	 * @param sqlType the target SQL type to which the value should be converted
+	 * @return the converted object corresponding to the specified SQL type
+	 */
+	protected static Object convert(String value, int sqlType) {
+		Object result;
+		if (Types.VARCHAR == sqlType) {
+			result = value;
+		} else if (Types.INTEGER == sqlType) {
+			result = Integer.valueOf(value);
+		} else {
+			throw new RuntimeException("Don't know how to convert string " + value + " to sql type " + sqlType);
+		}
+		
+		return result;
+	}
+	
 }
