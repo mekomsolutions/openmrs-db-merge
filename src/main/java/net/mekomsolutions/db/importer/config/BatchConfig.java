@@ -61,13 +61,11 @@ public class BatchConfig {
 	
 	@Bean
 	public StepFactory stepFactory(JobRepository jobRepo, JobExplorer jobExplorer,
-	                               @Qualifier("batchTxManager") PlatformTransactionManager batchTxManager,
 	                               @Qualifier("sinkTxManager") PlatformTransactionManager sinkTxManager,
 	                               @Qualifier("sourceDataSource") DataSource sourceDataSource,
 	                               @Qualifier("sinkDataSource") DataSource sinkDataSource,
 	                               @Qualifier("batchDataSource") DataSource batchDataSource) {
-		return new StepFactory(jobRepo, jobExplorer, batchTxManager, sinkTxManager, sourceDataSource, sinkDataSource,
-		        batchDataSource);
+		return new StepFactory(jobRepo, jobExplorer, sinkTxManager, sourceDataSource, sinkDataSource, batchDataSource);
 	}
 	
 }

@@ -155,16 +155,10 @@ public class ImportUtils {
 		return null;
 	}
 	
-	protected static void handleFailure(Table table, Map<String, Object> item, Throwable throwable,
+	protected static void handleFailure(Table table, Map<String, Object> row, Throwable throwable,
 	                                    ImportDbHelper importDbHelper) {
 		
-		String primaryKey;
-		if (table.primaryKeys().size() == 1) {
-			primaryKey = item.get(table.primaryKeys().get(0)).toString();
-		} else {
-			primaryKey = table.primaryKeys().stream().map(k -> item.get(k).toString()).collect(Collectors.joining("#"));
-		}
-		
+		final String primaryKey = getIdentifier(table, row);
 		Throwable cause = ExceptionUtils.getRootCause(throwable);
 		if (cause == null) {
 			cause = throwable;
@@ -231,6 +225,28 @@ public class ImportUtils {
 		
 		daemonUserId = (Integer) id;
 		return daemonUserId;
+	}
+	
+	protected static String getIdentifierLabel(Table table) {
+		String label;
+		if (table.primaryKeys().size() == 1) {
+			label = table.primaryKeys().get(0);
+		} else {
+			label = table.primaryKeys().stream().collect(Collectors.joining("#"));
+		}
+		
+		return label;
+	}
+	
+	protected static String getIdentifier(Table table, Map<String, Object> row) {
+		String identifier;
+		if (table.primaryKeys().size() == 1) {
+			identifier = row.get(table.primaryKeys().get(0)).toString();
+		} else {
+			identifier = table.primaryKeys().stream().map(k -> row.get(k).toString()).collect(Collectors.joining("#"));
+		}
+		
+		return identifier;
 	}
 	
 	/**

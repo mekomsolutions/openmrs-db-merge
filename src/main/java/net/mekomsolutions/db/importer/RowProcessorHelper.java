@@ -57,7 +57,7 @@ public class RowProcessorHelper {
 		}
 	}
 	
-	private Row doProcess(Table table, Map<String, Object> item) throws Exception {
+	private Row doProcess(Table table, Map<String, Object> item) {
 		if ("users".equalsIgnoreCase(table.name())) {
 			boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
 			if (exists) {

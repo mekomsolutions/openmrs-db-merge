@@ -1,4 +1,4 @@
 package net.mekomsolutions.db.importer;
 
-public record Retry(Integer retryId, Table table, Row row) {
+public record Retry(Integer retryId, String rowIdentifier, Table table, Row row) {
 }

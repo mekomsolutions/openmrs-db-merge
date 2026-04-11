@@ -62,8 +62,6 @@ public class StepFactory {
 	
 	private JobRepository jobRepository;
 	
-	private PlatformTransactionManager batchTxManager;
-	
 	private PlatformTransactionManager sinkTxManager;
 	
 	private DataSource sourceDataSource;
@@ -72,12 +70,10 @@ public class StepFactory {
 	
 	private DataSource batchDataSource;
 	
-	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager batchTxManager,
-	    PlatformTransactionManager sinkTxManager, DataSource sourceDataSource, DataSource sinkDataSource,
-	    DataSource batchDataSource) {
+	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager sinkTxManager,
+	    DataSource sourceDataSource, DataSource sinkDataSource, DataSource batchDataSource) {
 		this.jobRepository = jobRepository;
 		this.jobExplorer = jobExplorer;
-		this.batchTxManager = batchTxManager;
 		this.sinkTxManager = sinkTxManager;
 		this.sourceDataSource = sourceDataSource;
 		this.sinkDataSource = sinkDataSource;

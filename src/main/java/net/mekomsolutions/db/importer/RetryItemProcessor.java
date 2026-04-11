@@ -30,12 +30,23 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		final Table baseTable = metadataExtractor.getTable(baseTableName);
 		final String primaryKeyCol = baseTable.primaryKeys().get(0);
 		if (log.isDebugEnabled()) {
-			log.debug("Retrying row in table {} with {} = {}", baseTableName, primaryKeyCol, rowId);
+			final String idLabel = ImportUtils.getIdentifierLabel(baseTable);
+			log.debug("Retrying row in table {} with {} = {}", baseTableName, idLabel, rowId);
 		}
 		
 		Map<String, Object> rowData = sourceDbHelper.getRow(baseTableName, primaryKeyCol, rowId);
-		Row row = helper.process(baseTable, rowData, false);
-		return new Retry(id, baseTable, row);
+		Row row = helper.process(baseTable, rowData, true);
+		if (row == null) {
+			if (log.isDebugEnabled()) {
+				final String idLabel = ImportUtils.getIdentifierLabel(baseTable);
+				log.debug("Retry failed for row in table {} with {} = {} associated with retry with id {}", baseTableName,
+				    idLabel, rowId, id);
+			}
+			
+			return null;
+		}
+		
+		return new Retry(id, rowId, baseTable, row);
 	}
 	
 }
