@@ -44,8 +44,8 @@ public class ImportUtils {
 		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
 		String updateClause = insertColumns.stream().filter(c -> !uniqueColumns.contains(c)).map(c -> c + " = r." + c)
 		        .collect(Collectors.joining(","));
-		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE " + updateClause, tableName,
-		    columns, placeholders);
+		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE %s", tableName, columns,
+		    placeholders, updateClause);
 	}
 	
 	protected static boolean isSubclassTable(String tableName) {
