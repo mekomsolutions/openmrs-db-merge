@@ -31,7 +31,7 @@ import net.mekomsolutions.db.importer.RowProcessorHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
 import net.mekomsolutions.db.importer.StepFactory;
 
-@EnableBatchProcessing(dataSourceRef = "batchDataSource", transactionManagerRef = "batchTxManager")
+@EnableBatchProcessing(dataSourceRef = "mgtDataSource", transactionManagerRef = "mgtTxManager")
 public class BatchConfig {
 	
 	@Bean
@@ -91,8 +91,8 @@ public class BatchConfig {
 	                               @Qualifier("sinkTxManager") PlatformTransactionManager sinkTxManager,
 	                               @Qualifier("sourceDataSource") DataSource sourceDataSource,
 	                               @Qualifier("sinkDataSource") DataSource sinkDataSource,
-	                               @Qualifier("batchDataSource") DataSource batchDataSource) {
-		return new StepFactory(jobRepo, jobExplorer, sinkTxManager, sourceDataSource, sinkDataSource, batchDataSource);
+	                               @Qualifier("mgtDataSource") DataSource mgtDataSource) {
+		return new StepFactory(jobRepo, jobExplorer, sinkTxManager, sourceDataSource, sinkDataSource, mgtDataSource);
 	}
 	
 }

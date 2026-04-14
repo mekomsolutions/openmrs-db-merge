@@ -69,18 +69,18 @@ public class StepFactory {
 	
 	private DataSource sinkDataSource;
 	
-	private DataSource batchDataSource;
+	private DataSource mgtDataSource;
 	
 	private Map<String, JdbcBatchItemWriter<Row>> tableWriterMap;
 	
 	public StepFactory(JobRepository jobRepository, JobExplorer jobExplorer, PlatformTransactionManager sinkTxManager,
-	    DataSource sourceDataSource, DataSource sinkDataSource, DataSource batchDataSource) {
+	    DataSource sourceDataSource, DataSource sinkDataSource, DataSource mgtDataSource) {
 		this.jobRepository = jobRepository;
 		this.jobExplorer = jobExplorer;
 		this.sinkTxManager = sinkTxManager;
 		this.sourceDataSource = sourceDataSource;
 		this.sinkDataSource = sinkDataSource;
-		this.batchDataSource = batchDataSource;
+		this.mgtDataSource = mgtDataSource;
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
@@ -154,7 +154,7 @@ public class StepFactory {
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
 	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover,
 	                            TaskExecutor executor) {
-		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
+		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), mgtDataSource, false);
 		ItemProcessor<Map<String, Object>, Retry> retryProcessor = new RetryItemProcessor(sourceDbHelper, processorHelper,
 		        metadataExtractor);
 		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createAsyncProcessor(retryProcessor, executor);

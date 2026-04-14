@@ -18,7 +18,7 @@ public class ImportDbHelper {
 	
 	protected JdbcTemplate jdbcTemplate;
 	
-	public ImportDbHelper(@Qualifier("batchJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public ImportDbHelper(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 	

@@ -32,7 +32,7 @@ public class RetryRemover {
 	
 	private JdbcTemplate jdbcTemplate;
 	
-	public RetryRemover(@Qualifier("batchJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public RetryRemover(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 	

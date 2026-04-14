@@ -43,18 +43,18 @@ public class DataSourceConfig {
 	}
 	
 	@Bean
-	@ConfigurationProperties(prefix = "spring.datasource.batch")
-	public DataSource batchDataSource() {
+	@ConfigurationProperties(prefix = "spring.datasource.mgt")
+	public DataSource mgtDataSource() {
 		return DataSourceBuilder.create().build();
 	}
 	
 	@Bean
-	public JdbcTemplate batchJdbcTemplate(@Qualifier("batchDataSource") DataSource ds) {
+	public JdbcTemplate mgtJdbcTemplate(@Qualifier("mgtDataSource") DataSource ds) {
 		return new JdbcTemplate(ds);
 	}
 	
 	@Bean
-	public PlatformTransactionManager batchTxManager(@Qualifier("batchDataSource") DataSource ds) {
+	public PlatformTransactionManager mgtTxManager(@Qualifier("mgtDataSource") DataSource ds) {
 		return new JdbcTransactionManager(ds);
 	}
 	
@@ -64,7 +64,7 @@ public class DataSourceConfig {
 	}
 	
 	@Bean
-	public SpringLiquibase springLiquibase(@Qualifier("batchDataSource") DataSource ds) {
+	public SpringLiquibase springLiquibase(@Qualifier("mgtDataSource") DataSource ds) {
 		SpringLiquibase liquibase = new SpringLiquibase();
 		liquibase.setDataSource(ds);
 		liquibase.setChangeLog("liquibase.xml");
