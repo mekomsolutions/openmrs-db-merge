@@ -53,11 +53,11 @@ public class ImportUtils {
 	}
 	
 	protected static boolean isExtensionTable(Table table) {
-		return table.primaryKeys().size() == 2 && table.columnNames().size() == 3;
+		return table.primaryKeys().size() == 2 && table.columns().size() == 3;
 	}
 	
 	protected static boolean isMappingTable(Table table) {
-		return table.primaryKeys().size() == 2 && table.columnNames().size() == 2;
+		return table.primaryKeys().size() == 2 && table.columns().size() == 2;
 	}
 	
 	protected static Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid,

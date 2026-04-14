@@ -78,7 +78,6 @@ public class MetadataExtractor {
 					Table table = jdbcTemplate.execute((ConnectionCallback<Table>) connection -> {
 						List<String> keys = getPrimaryKeys(tableName, connection);
 						List<Column> columns = getColumns(tableName, connection);
-						List<String> columnNames = columns.stream().map(col -> col.name()).toList();
 						List<String> insertColumns = columns.stream().filter(c -> !c.autoIncrement()).map(c -> c.name())
 						        .toList();
 						if (ImportUtils.isSubclassTable(tableName)) {
@@ -91,7 +90,7 @@ public class MetadataExtractor {
 						Map<String, Column> nameColMap = columns.stream()
 						        .collect(Collectors.toMap(Column::name, col -> col));
 						
-						return new Table(tableName, keys, columnNames, insertColumns, nameColMap);
+						return new Table(tableName, keys, insertColumns, nameColMap);
 					});
 					
 					if (!ImportUtils.isExtensionTable(table) && !ImportUtils.isMappingTable(table)) {
@@ -102,7 +101,7 @@ public class MetadataExtractor {
 					}
 					
 					if (!ImportUtils.isSubclassTable(tableName) && !ImportUtils.isExtensionTable(table)
-					        && !ImportUtils.isMappingTable(table) && !table.columnNames().contains("uuid")) {
+					        && !ImportUtils.isMappingTable(table) && !table.columns().keySet().contains("uuid")) {
 						//TODO Future Add support for these tables
 						throw new RuntimeException("Table " + tableName + " has no uuid column");
 					}
