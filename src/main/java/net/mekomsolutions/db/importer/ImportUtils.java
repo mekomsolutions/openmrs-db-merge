@@ -29,7 +29,7 @@ public class ImportUtils {
 		//INSERT INTO table1 (col1,col2) VALUES (?,?) AS r ON DUPLICATE KEY UPDATE col1 = r.col1,col2 = r.col2
 		//The query above actually would have no effect, the alternative would be to skip existing many-to-many table 
 		//rows in the RowItemProcessor but I'm guessing that would make the application slower
-		//TODO try it and compare the execution times
+		//TODO Future try it and compare the execution times
 		List<String> uniqueColumns;
 		if (ImportUtils.isSubclassTable(tableName)) {
 			uniqueColumns = List.of(table.primaryKeys().get(0));

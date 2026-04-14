@@ -22,6 +22,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.JobListener;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.RetryRemover;
 import net.mekomsolutions.db.importer.RetryWriter;
@@ -45,7 +46,7 @@ public class BatchConfig {
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
-	                     @Qualifier("processorExecutor") TaskExecutor executor)
+	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener listener)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
@@ -63,7 +64,7 @@ public class BatchConfig {
 		}
 		
 		if (!steps.isEmpty()) {
-			return builder.build();
+			return builder.listener(listener).build();
 		}
 		
 		//There is nothing to import
@@ -73,7 +74,7 @@ public class BatchConfig {
 	}
 	
 	@Bean
-	public TaskExecutor processorExecutor(@Value("${task.thread.count}") Integer threadCount) {
+	public ThreadPoolTaskExecutor processorExecutor(@Value("${task.thread.count}") Integer threadCount) {
 		if (threadCount == null) {
 			threadCount = Runtime.getRuntime().availableProcessors() * 2;
 		}

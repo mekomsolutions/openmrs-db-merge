@@ -131,7 +131,7 @@ public class RowProcessorHelper {
 		Object sinkValue;
 		//Synchronized block ensures no concurrent inserts of placeholders into a specific table to avoid
 		//race conditions and possibly deadlocks.
-		//TODO we should possibly allow concurrent inserts of different rows.
+		//TODO Future we should possibly allow concurrent inserts of different rows.
 		synchronized (fk) {
 			//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
 			//repeatedly reference the same row

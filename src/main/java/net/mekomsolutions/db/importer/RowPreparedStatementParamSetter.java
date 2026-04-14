@@ -15,7 +15,7 @@ public class RowPreparedStatementParamSetter implements ItemPreparedStatementSet
 	public void setValues(Row row, PreparedStatement ps) throws SQLException {
 		int counter = 1;
 		for (Object value : row.values()) {
-			//TODO Use the column sql type
+			//TODO Future Use the column sql type
 			StatementCreatorUtils.setParameterValue(ps, counter++, SqlTypeValue.TYPE_UNKNOWN, value);
 		}
 	}
