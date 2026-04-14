@@ -8,13 +8,17 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.Constants;
@@ -40,12 +44,14 @@ public class BatchConfig {
 	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
-	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover)
+	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
+	                     @Qualifier("processorExecutor") TaskExecutor executor)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
-		List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper, processorHelper,
-		    retryWriter, retryRemover);
+		final List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper,
+		    processorHelper, retryWriter, retryRemover, executor);
+		
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {
 			if (builder == null) {
@@ -56,7 +62,27 @@ public class BatchConfig {
 			builder = builder.next(step);
 		}
 		
-		return builder.build();
+		if (!steps.isEmpty()) {
+			return builder.build();
+		}
+		
+		//There is nothing to import
+		SimpleJob emptyJob = new SimpleJob();
+		emptyJob.setJobRepository(jobRepository);
+		return emptyJob;
+	}
+	
+	@Bean
+	public TaskExecutor processorExecutor(@Value("${task.thread.count}") Integer threadCount) {
+		if (threadCount == null) {
+			threadCount = Runtime.getRuntime().availableProcessors() * 2;
+		}
+		
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(threadCount);
+		executor.setMaxPoolSize(threadCount);
+		executor.initialize();
+		return executor;
 	}
 	
 	@Bean

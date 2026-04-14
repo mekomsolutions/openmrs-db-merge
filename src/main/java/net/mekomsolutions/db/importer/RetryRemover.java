@@ -79,7 +79,7 @@ public class RetryRemover {
 			int deleteCount = jdbcTemplate.update(String.format(DELETE_QUERY, retryIdsString));
 			if (log.isDebugEnabled()) {
 				final String plural = deleteCount == 1 ? "row" : "rows";
-				log.info("Deleted {} {} from the {} table", deleteCount, plural, FAILED_ITEM_TABLE);
+				log.info("Deleted {} re-processed {} from the {} table", deleteCount, plural, FAILED_ITEM_TABLE);
 			}
 			
 			if (deleteCount != retryIds.size()) {

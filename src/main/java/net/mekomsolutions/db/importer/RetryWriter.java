@@ -31,7 +31,7 @@ public class RetryWriter implements ItemWriter<Retry> {
 		Map<String, List<Retry>> tableRetriesMap = chunk.getItems().stream().collect(groupingBy(r -> r.table().name()));
 		for (Map.Entry<String, List<Retry>> e : tableRetriesMap.entrySet()) {
 			List<Row> rows = e.getValue().stream().map(Retry::row).collect(Collectors.toList());
-			log.info("Re-processing {} failures {} rows from table {}", rows.size(), e.getKey());
+			log.info("Re-processing {} failed rows from table {}", rows.size(), e.getKey());
 			stepFactory.getBatchWriter(e.getKey()).write(new Chunk<>(rows));
 		}
 	}

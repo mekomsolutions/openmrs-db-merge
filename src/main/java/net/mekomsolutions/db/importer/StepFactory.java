@@ -36,8 +36,8 @@ import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.extern.slf4j.Slf4j;
@@ -83,13 +83,13 @@ public class StepFactory {
 		this.batchDataSource = batchDataSource;
 	}
 	
-	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
-	                               RowProcessorHelper processorHelper) {
+	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
+	                               TaskExecutor executor) {
 		
 		final Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
 		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(table, processorHelper);
-		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor);
+		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor, executor);
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
@@ -152,11 +152,12 @@ public class StepFactory {
 	}
 	
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
-	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover) {
+	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover,
+	                            TaskExecutor executor) {
 		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), batchDataSource, false);
 		ItemProcessor<Map<String, Object>, Retry> retryProcessor = new RetryItemProcessor(sourceDbHelper, processorHelper,
 		        metadataExtractor);
-		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createAsyncProcessor(retryProcessor);
+		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createAsyncProcessor(retryProcessor, executor);
 		ItemWriter<Future<Retry>> writer = createAsyncWriter(retryWriter);
 		//Note that we still use the sinkTxManager because the row being retried is written to the sink DB and the
 		//retry deletion process happens outside this TX i.e. after the chunk is committed.
@@ -167,7 +168,7 @@ public class StepFactory {
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor, RowPreparedStatementParamSetter prepStmtParamSetter,
 	                           SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper, RetryWriter retryWriter,
-	                           RetryRemover retryRemover)
+	                           RetryRemover retryRemover, TaskExecutor executor)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
@@ -196,25 +197,25 @@ public class StepFactory {
 		
 		List<Step> steps = new ArrayList<>(importTables.size());
 		importTables.stream().forEach(t -> {
-			steps.add(createTableStep(t, metadataExtractor, processorHelper));
+			steps.add(createTableStep(t, metadataExtractor, processorHelper, executor));
 		});
 		
 		if (retry) {
-			steps.add(createRetryStep(sourceDbHelper, processorHelper, metadataExtractor, retryWriter, retryRemover));
+			Step step = createRetryStep(sourceDbHelper, processorHelper, metadataExtractor, retryWriter, retryRemover,
+			    executor);
+			steps.add(step);
 		}
 		
 		return steps;
 	}
 	
-	private <T> ItemProcessor<Map<String, Object>, Future<T>> createAsyncProcessor(ItemProcessor<Map<String, Object>, T> delegate) {
+	private <T> ItemProcessor<Map<String, Object>, Future<T>> createAsyncProcessor(ItemProcessor<Map<String, Object>, T> delegate,
+	                                                                               TaskExecutor executor) {
+		
 		AsyncItemProcessor asyncProcessor = new AsyncItemProcessor();
 		asyncProcessor.setDelegate(delegate);
-		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		//TODO Make configurable
-		executor.setCorePoolSize(32);
-		executor.setMaxPoolSize(32);
-		executor.initialize();
 		asyncProcessor.setTaskExecutor(executor);
+		
 		try {
 			asyncProcessor.afterPropertiesSet();
 		}
