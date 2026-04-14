@@ -74,7 +74,7 @@ public class BatchConfig {
 	}
 	
 	@Bean
-	public ThreadPoolTaskExecutor processorExecutor(@Value("${task.thread.count}") Integer threadCount) {
+	public ThreadPoolTaskExecutor processorExecutor(@Value("${thread.count}") Integer threadCount) {
 		if (threadCount == null) {
 			threadCount = Runtime.getRuntime().availableProcessors() * 2;
 		}

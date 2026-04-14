@@ -50,13 +50,13 @@ public class StepFactory {
 	@Value("${tables.exclude.file.path}")
 	private File excludeTablesFile;
 	
-	@Value("${batch.read.size:1000}")
+	@Value("${batch.read.size}")
 	private Integer batchReadSize;
 	
-	@Value("${batch.write.size:50}")
+	@Value("${batch.write.size}")
 	private Integer batchWriteSize;
 	
-	@Value("${" + Constants.PROP_FAILED_ITEMS_RETRY + ":false}")
+	@Value("${" + Constants.PROP_RETRY_FAILED_ITEMS + ":false}")
 	private boolean retry;
 	
 	private JobExplorer jobExplorer;

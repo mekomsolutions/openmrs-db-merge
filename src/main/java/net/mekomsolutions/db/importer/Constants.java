@@ -39,6 +39,6 @@ public class Constants {
 	
 	public static final String COMPOSITE_ID_SEPARATOR = "#";
 	
-	public static final String PROP_FAILED_ITEMS_RETRY = "failed.items.retry";
+	public static final String PROP_RETRY_FAILED_ITEMS = "retry.failed.items";
 	
 }
