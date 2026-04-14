@@ -86,11 +86,11 @@ public class StepFactory {
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor,
 	                               RowProcessorHelper processorHelper) {
 		
-		Table table = metadataExtractor.getTable(tableName);
+		final Table table = metadataExtractor.getTable(tableName);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
 		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(table, processorHelper);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor);
-		ItemWriter<Future<Row>> writer = createRowWriter(tableName);
+		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
 		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder()).build();
@@ -127,18 +127,20 @@ public class StepFactory {
 		return tableWriterMap.get(tableName);
 	}
 	
-	private ItemWriter<Future<Row>> createRowWriter(String tableName) {
-		JdbcBatchItemWriter<Row> writer = getBatchWriter(tableName);
-		
+	private <T> ItemWriter<Future<T>> createRowWriter(JdbcBatchItemWriter<T> delegate) {
 		try {
-			writer.afterPropertiesSet();
+			delegate.afterPropertiesSet();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		
-		AsyncItemWriter<Row> asyncWriter = new AsyncItemWriter();
-		asyncWriter.setDelegate(writer);
+		return createAsyncWriter(delegate);
+	}
+	
+	private <T> ItemWriter<Future<T>> createAsyncWriter(ItemWriter<T> delegate) {
+		AsyncItemWriter<T> asyncWriter = new AsyncItemWriter();
+		asyncWriter.setDelegate(delegate);
 		try {
 			asyncWriter.afterPropertiesSet();
 		}
@@ -155,11 +157,12 @@ public class StepFactory {
 		ItemProcessor<Map<String, Object>, Retry> retryProcessor = new RetryItemProcessor(sourceDbHelper, processorHelper,
 		        metadataExtractor);
 		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createAsyncProcessor(retryProcessor);
+		ItemWriter<Future<Retry>> writer = createAsyncWriter(retryWriter);
 		//Note that we still use the sinkTxManager because the row being retried is written to the sink DB and the
 		//retry deletion process happens outside this TX i.e. after the chunk is committed.
 		SimpleStepBuilder<Map<String, Object>, Future<Retry>> builder = new StepBuilder(FAILED_ITEM_TABLE, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
-		return builder.reader(reader).processor(processor).writer(retryWriter).listener(retryRemover).build();
+		return builder.reader(reader).processor(processor).writer(writer).listener(retryRemover).build();
 	}
 	
 	public List<Step> getSteps(MetadataExtractor metadataExtractor, RowPreparedStatementParamSetter prepStmtParamSetter,
