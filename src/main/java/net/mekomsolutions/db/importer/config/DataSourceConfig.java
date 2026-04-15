@@ -11,14 +11,19 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 import liquibase.integration.spring.SpringLiquibase;
+import net.mekomsolutions.db.importer.ImportUtils;
 
 public class DataSourceConfig {
 	
 	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.sink")
 	public DataSource sinkDataSource() {
-		return DataSourceBuilder.create().build();
+		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
+		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		return ds;
 	}
 	
 	@Bean
@@ -34,7 +39,9 @@ public class DataSourceConfig {
 	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.source")
 	public DataSource sourceDataSource() {
-		return DataSourceBuilder.create().build();
+		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
+		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		return ds;
 	}
 	
 	@Bean
@@ -45,7 +52,9 @@ public class DataSourceConfig {
 	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.mgt")
 	public DataSource mgtDataSource() {
-		return DataSourceBuilder.create().build();
+		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
+		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		return ds;
 	}
 	
 	@Bean

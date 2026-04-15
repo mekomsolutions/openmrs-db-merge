@@ -264,4 +264,14 @@ public class ImportUtils {
 		item.put("retire_reason", Constants.RETIRE_REASON);
 	}
 	
+	/**
+	 * Calculates and returns the default thread count based on the available processors. The value is
+	 * determined as twice the number of available processors on the system.
+	 *
+	 * @return the default thread count.
+	 */
+	public static int getDefaultThreadCount() {
+		return Runtime.getRuntime().availableProcessors() * 2;
+	}
+	
 }

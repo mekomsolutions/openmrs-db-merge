@@ -22,6 +22,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.ImportUtils;
 import net.mekomsolutions.db.importer.JobListener;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.RetryRemover;
@@ -76,7 +77,7 @@ public class BatchConfig {
 	@Bean
 	public ThreadPoolTaskExecutor processorExecutor(@Value("${thread.count}") Integer threadCount) {
 		if (threadCount == null) {
-			threadCount = Runtime.getRuntime().availableProcessors() * 2;
+			threadCount = ImportUtils.getDefaultThreadCount();
 		}
 		
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
