@@ -3,6 +3,7 @@ package net.mekomsolutions.db.importer.config;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -14,15 +15,19 @@ import org.springframework.transaction.PlatformTransactionManager;
 import com.zaxxer.hikari.HikariDataSource;
 
 import liquibase.integration.spring.SpringLiquibase;
+import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.ImportUtils;
 
 public class DataSourceConfig {
+	
+	@Value("${" + Constants.PROP_MAX_CONN_POOL_SIZE + "}")
+	private Integer maxSize;
 	
 	@Bean
 	@ConfigurationProperties(prefix = "spring.datasource.sink")
 	public DataSource sinkDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	
@@ -40,7 +45,7 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.source")
 	public DataSource sourceDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	
@@ -53,7 +58,7 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.mgt")
 	public DataSource mgtDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getDefaultThreadCount());
+		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	

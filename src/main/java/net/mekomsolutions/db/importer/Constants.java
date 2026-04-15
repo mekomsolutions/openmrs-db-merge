@@ -41,4 +41,6 @@ public class Constants {
 	
 	public static final String PROP_RETRY_FAILED_ITEMS = "retry.failed.items";
 	
+	public static final String PROP_MAX_CONN_POOL_SIZE = "connection.max.pool.size";
+	
 }

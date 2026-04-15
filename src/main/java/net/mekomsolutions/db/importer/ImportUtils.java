@@ -274,6 +274,18 @@ public class ImportUtils {
 	}
 	
 	/**
+	 * Gets the maximum connection size based on the provided value. If the provided value is null, a
+	 * default value is returned based on the thread count.
+	 * 
+	 * @see #getDefaultThreadCount()
+	 * @param maxSize the maximum connection size specified by the user; can be null
+	 * @return the maximum connection size, or the default thread count if maxSize is null
+	 */
+	public static int getMaxConnectionSize(Integer maxSize) {
+		return maxSize != null ? maxSize : ImportUtils.getDefaultThreadCount();
+	}
+	
+	/**
 	 * Calculates and returns the default thread count based on the available processors. The value is
 	 * determined as twice the number of available processors on the system.
 	 *
