@@ -6,6 +6,7 @@ import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,11 +54,19 @@ public class ImportUtils {
 	}
 	
 	protected static boolean isExtensionTable(Table table) {
-		return table.primaryKeys().size() == 2 && table.columns().size() == 3;
+		return isExtensionTable(table.primaryKeys(), table.columns().values());
+	}
+	
+	protected static boolean isExtensionTable(List<String> primaryKeys, Collection<Column> columns) {
+		return primaryKeys.size() == 2 && columns.size() == 3;
 	}
 	
 	protected static boolean isMappingTable(Table table) {
-		return table.primaryKeys().size() == 2 && table.columns().size() == 2;
+		return isMappingTable(table.primaryKeys(), table.columns().values());
+	}
+	
+	protected static boolean isMappingTable(List<String> primaryKeys, Collection<Column> columns) {
+		return primaryKeys.size() == 2 && columns.size() == 2;
 	}
 	
 	protected static Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid,

@@ -78,33 +78,43 @@ public class MetadataExtractor {
 					Table table = jdbcTemplate.execute((ConnectionCallback<Table>) connection -> {
 						List<String> keys = getPrimaryKeys(tableName, connection);
 						List<Column> columns = getColumns(tableName, connection);
+						List<String> uniqueColumns = getUniqueColumns(tableName, connection);
 						List<String> insertColumns = columns.stream().filter(c -> !c.autoIncrement()).map(c -> c.name())
 						        .toList();
-						if (ImportUtils.isSubclassTable(tableName)) {
+						Map<String, Column> nameColMap = columns.stream()
+						        .collect(Collectors.toMap(Column::name, col -> col));
+						boolean isSubclassTable = ImportUtils.isSubclassTable(tableName);
+						boolean isExtensionTable = ImportUtils.isExtensionTable(keys, columns);
+						boolean isMappingTable = ImportUtils.isMappingTable(keys, columns);
+						if (!ImportUtils.isExtensionTable(keys, columns) && !ImportUtils.isMappingTable(keys, columns)) {
+							if (keys.size() != 1) {
+								throw new RuntimeException(
+								        "Table " + tableName + " has unsupported primary key count " + keys.size());
+							}
+						}
+						
+						if (!isSubclassTable && !isExtensionTable && !isMappingTable) {
+							Column uuidColum = nameColMap.get("uuid");
+							if (uuidColum == null) {
+								//TODO Future Add support for these tables
+								throw new RuntimeException("Table " + tableName + " has no uuid column");
+							}
+							
+							if (!uniqueColumns.contains("uuid")) {
+								throw new RuntimeException(
+								        "Table " + tableName + " is missing a unique constraint on uuid column");
+							}
+						}
+						
+						if (isSubclassTable) {
 							final List<String> temp = new ArrayList<>(insertColumns);
 							insertColumns = new ArrayList<>(temp.size() + 1);
 							insertColumns.add(keys.get(0));
 							insertColumns.addAll(temp);
 						}
 						
-						Map<String, Column> nameColMap = columns.stream()
-						        .collect(Collectors.toMap(Column::name, col -> col));
-						
 						return new Table(tableName, keys, insertColumns, nameColMap);
 					});
-					
-					if (!ImportUtils.isExtensionTable(table) && !ImportUtils.isMappingTable(table)) {
-						if (table.primaryKeys().size() != 1) {
-							throw new RuntimeException("Table " + tableName + " has unsupported primary key count "
-							        + table.primaryKeys().size());
-						}
-					}
-					
-					if (!ImportUtils.isSubclassTable(tableName) && !ImportUtils.isExtensionTable(table)
-					        && !ImportUtils.isMappingTable(table) && !table.columns().keySet().contains("uuid")) {
-						//TODO Future Add support for these tables
-						throw new RuntimeException("Table " + tableName + " has no uuid column");
-					}
 					
 					NAME_AND_TABLE_CACHE.put(tableName, table);
 				}
@@ -202,6 +212,33 @@ public class MetadataExtractor {
 		}
 		
 		return foreignKeys.stream().toList();
+	}
+	
+	/**
+	 * Retrieves a list of columns that have a unique constraint in the specified table.
+	 *
+	 * @param tableName The name of the table.
+	 * @param connection The Connection object.
+	 * @return A List of Column names that have a unique constraint.
+	 * @throws SQLException
+	 */
+	public List<String> getUniqueColumns(String tableName, Connection connection) throws SQLException {
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching unique columns for table: {}", tableName);
+		}
+		
+		List<String> uniqueColumns = new ArrayList<>();
+		try (ResultSet rs = connection.getMetaData().getIndexInfo(connection.getCatalog(), connection.getSchema(), tableName,
+		    true, false)) {
+			while (rs.next()) {
+				boolean isUnique = !rs.getBoolean("NON_UNIQUE");
+				if (isUnique) {
+					uniqueColumns.add(rs.getString("COLUMN_NAME").toLowerCase(Locale.ENGLISH));
+				}
+			}
+		}
+		
+		return uniqueColumns;
 	}
 	
 }
