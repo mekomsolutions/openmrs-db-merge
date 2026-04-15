@@ -11,6 +11,10 @@ Imports data from a source database into another destination database
 6. [Configuration](#configuration)
 
 ## About
+A spring boot application that merges 2 OpenMRS databases by copying all rows from tables in a source database to tables 
+in a destination database.
+
+The application does not sync rows in a table specified in [this exclusion file](src/main/resources/exclude_tables.txt).
 
 ## Build Requirements
 - A unix operating system (Never been tested on windows)
@@ -19,8 +23,14 @@ Imports data from a source database into another destination database
 - [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
 ## Run Requirements
+- A unix operating system (Never been tested on windows)
+- Java 17+
 
 ## How To Build
+Run the command below,
+```
+mvn clean install
+```
 
 ## How To Run Application
 
@@ -30,8 +40,7 @@ java -jar db-importer-{VERSION}.jar
 
 ## Configuration
 
-
-Below are the provided environment variables to configure the applications.
+Below are the provided environment variables to configure the application.
 
 | Name | Description | Required | Default Value |
 |------|-------------|:--------:|:-------------:|
@@ -47,6 +56,6 @@ Below are the provided environment variables to configure the applications.
 | READ_BATCH_SIZE | The number of rows to read from the source database for processing | No | 1000 |
 | WRITE_BATCH_SIZE | The number of rows to write to the destination database in each call | No | 250 |
 | THREAD_COUNT | The number of threads to use for parallel processing of rows | No | Twice the CPU cores |
-| MAX_CONN_POOL_SIZE | The number of threads to use for parallel processing of rows, not that this value is applied to all the DB datasources i.e. source, destination and management, it is recommended to have this matching the value of `THREAD_COUNT` | No | Twice the CPU cores |
+| MAX_CONN_POOL_SIZE | The number of threads to use for parallel processing of rows, not that this value is applied to all the DB datasources i.e. source, destination and management, it is recommended to have this matching the value of `THREAD_COUNT` if the thread count is not above the allowed connection count by the database server | No | Twice the CPU cores |
 | RETRY_FAILED_ITEMS | Specifies whether rows in the failure queue should be re-processed | No | false |
 | LOG_CFG_FILE | The path to the file for the logback configuration file to use, defaults to one bundled with the application | No ||
