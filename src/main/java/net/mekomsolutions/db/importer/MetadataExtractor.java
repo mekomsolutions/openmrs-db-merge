@@ -106,13 +106,6 @@ public class MetadataExtractor {
 							}
 						}
 						
-						if (isSubclassTable) {
-							final List<String> temp = new ArrayList<>(insertColumns);
-							insertColumns = new ArrayList<>(temp.size() + 1);
-							insertColumns.add(keys.get(0));
-							insertColumns.addAll(temp);
-						}
-						
 						return new Table(tableName, keys, insertColumns, nameColMap);
 					});
 					

@@ -33,6 +33,9 @@ mvn clean install
 ```
 
 ## How To Run Application
+**NOTE** Before running, the application you **MUST** first add a unique constraint to the `uuid` column in the `users` 
+table in the destination database. And, you **MUST** also remove the constraint after the users tables is processed or 
+the entire merge has completed.
 
 ```shell
 java -jar db-importer-{VERSION}.jar
