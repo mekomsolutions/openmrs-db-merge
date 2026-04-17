@@ -110,7 +110,9 @@ public class RowProcessorHelper {
 	private Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
 		String refTableName = fk.referenceTable();
 		String refColName = fk.referencedColumn();
-		if (ImportUtils.isSubclassTable(refTableName)) {
+		boolean isSubclassTable = ImportUtils.isSubclassTable(refTableName);
+		if (isSubclassTable) {
+			//For subclasses, the uuid is in the parent table
 			Table refTable = metadataExtractor.getTable(refTableName);
 			ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
 			refTableName = parentFk.referenceTable();
@@ -118,7 +120,9 @@ public class RowProcessorHelper {
 		}
 		
 		if (log.isDebugEnabled()) {
-			log.debug("Getting row in the {} source table referenced by {}.{}", refTableName, table.name(), fk.columnName());
+			final String msg = isSubclassTable ? "source " + refTableName + " row joined to " + fk.referenceTable() + " row"
+			        : "source " + refTableName + " row";
+			log.debug("Getting {} referenced by {}.{}", msg, table.name(), fk.columnName());
 		}
 		
 		Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);

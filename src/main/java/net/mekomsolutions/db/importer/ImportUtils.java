@@ -6,11 +6,13 @@ import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.batch.core.JobInstance;
 import org.springframework.batch.core.StepExecution;
@@ -32,9 +34,9 @@ public class ImportUtils {
 		//rows in the RowItemProcessor but I'm guessing that would make the application slower
 		//TODO Future try it and compare the execution times
 		List<String> uniqueColumns;
-		if (ImportUtils.isSubclassTable(tableName)) {
+		if (isSubclassTable(tableName)) {
 			uniqueColumns = List.of(table.primaryKeys().get(0));
-		} else if (ImportUtils.isExtensionTable(table)) {
+		} else if (isExtensionTable(table)) {
 			uniqueColumns = table.primaryKeys();
 		} else {
 			uniqueColumns = List.of("uuid");
@@ -72,7 +74,8 @@ public class ImportUtils {
 	protected static Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
-		//TODO Make thread safe to avoid duplication of placeholder row
+		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
+		//placeholder row
 		final String refTableName = fk.referenceTable();
 		if (log.isDebugEnabled()) {
 			final String fromColName = fk.columnName();
@@ -84,8 +87,37 @@ public class ImportUtils {
 		
 		Table refTable = metadataExtractor.getTable(refTableName);
 		List<Column> requiredColumns = getRequiredColumns(refTable);
-		return sinkDbHelper.insertRow(refTableName, requiredColumns.stream().map(Column::name).toList(),
-		    createPlaceholderRow(fk, requiredColumns, uuid, metadataExtractor, sinkDbHelper));
+		Object parentId = null;
+		boolean isSubclassTable = isSubclassTable(refTableName);
+		if (isSubclassTable) {
+			//For subclass table we first insert into the parent table
+			//TODO This code is actually duplicated from RowProcessorHelper, may set it on the Table object
+			ForeignKey parentFk = refTable.getColumn(fk.referencedColumn()).foreignKey();
+			String parentTableName = parentFk.referenceTable();
+			Table parentTable = metadataExtractor.getTable(parentTableName);
+			List<Column> parentRequiredColumns = getRequiredColumns(parentTable);
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Inserting parent row into sink table {} with uuid {} for child row in table {}", parentTableName,
+				    uuid, refTableName);
+			}
+			
+			Object[] parentValues = createPlaceholderRow(parentFk, parentRequiredColumns, uuid, metadataExtractor,
+			    sinkDbHelper);
+			parentId = sinkDbHelper.insertRow(parentTableName, parentRequiredColumns.stream().map(Column::name).toList(),
+			    parentValues);
+		}
+		
+		Object[] values = createPlaceholderRow(fk, requiredColumns, uuid, metadataExtractor, sinkDbHelper);
+		List<String> columnNames = requiredColumns.stream().map(Column::name).toList();
+		if (isSubclassTable) {
+			columnNames = new ArrayList<>(columnNames);
+			columnNames.add(refTable.primaryKeys().get(0));
+			values = ArrayUtils.add(values, parentId);
+		}
+		
+		final Object id = sinkDbHelper.insertRow(refTableName, columnNames, values);
+		return isSubclassTable ? parentId : id;
 	}
 	
 	private static Object[] createPlaceholderRow(ForeignKey fk, List<Column> requiredColumns, Object uuid,
@@ -129,6 +161,7 @@ public class ImportUtils {
 						log.debug(msg, colName, refTableName);
 					}
 					
+					//TODO After the row is inserted, switch back to the self reference except for creator field.
 					value = getDaemonUserId(sinkDbHelper);
 				} else {
 					value = getPhantomRowId(colFk, refTableName, metadataExtractor, sinkDbHelper);
@@ -215,7 +248,14 @@ public class ImportUtils {
 	
 	private static List<Column> getRequiredColumns(Table t) {
 		//TODO Cache the required columns for each table or change Table from a record
-		return t.columns().values().stream().filter(c -> !c.nullable() && !c.autoIncrement()).toList();
+		return t.columns().values().stream().filter(c -> {
+			boolean result = !c.nullable() && !c.autoIncrement();
+			if (isSubclassTable(t.name())) {
+				return result && !t.primaryKeys().contains(c.name());
+			}
+			
+			return result;
+		}).toList();
 	}
 	
 	private static boolean isUserSelfReference(String table, String colName) {
@@ -282,7 +322,7 @@ public class ImportUtils {
 	 * @return the maximum connection size, or the default thread count if maxSize is null
 	 */
 	public static int getMaxConnectionSize(Integer maxSize) {
-		return maxSize != null ? maxSize : ImportUtils.getDefaultThreadCount();
+		return maxSize != null ? maxSize : getDefaultThreadCount();
 	}
 	
 	/**
