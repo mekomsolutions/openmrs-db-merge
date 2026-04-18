@@ -1,5 +1,7 @@
 package net.mekomsolutions.db.importer;
 
+import static net.mekomsolutions.db.importer.ImportUtils.insertPlaceholderChildRow;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -144,22 +146,30 @@ public class RowProcessorHelper {
 			sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
 			if (sinkValue == null) {
 				if (log.isDebugEnabled()) {
-					log.debug("Inserting placeholder row into sink table {} with uuid {} referenced by {}.{}", refTableName,
+					final String msg = String.format(
+					    "Inserting placeholder row into sink table %s with uuid %s referenced by %s.%s", refTableName,
 					    refUuid, table.name(), fk.columnName());
+					log.debug(msg);
 				}
 				
 				sinkValue = ImportUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
 				    metadataExtractor, sinkDbHelper);
 			} else {
 				//For subclass table, insert child row if it does not exist
-				log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);
+				if (log.isDebugEnabled()) {
+					log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);
+				}
+				
 				if (isSubclassTable) {
 					final String childTableName = fk.referencedTable();
 					final String childColName = fk.columnName();
 					if (!sinkDbHelper.checkIfRowExists(childTableName, childColName, refUuid)) {
-						log.debug("Inserting child row into table {} for parent row in table {} with uuid {}",
-						    childTableName, refTableName, refUuid);
-						ImportUtils.insertPlaceholderChildRow(fk, sinkValue, metadataExtractor, sinkDbHelper);
+						if (log.isDebugEnabled()) {
+							log.debug("Inserting child row into table {} for parent row in table {} with uuid {}",
+							    childTableName, refTableName, refUuid);
+						}
+						
+						insertPlaceholderChildRow(childTableName, sinkValue, metadataExtractor, sinkDbHelper);
 					} else if (log.isDebugEnabled()) {
 						final String msg = String.format("Child row exists in table %s for parent row in %s uuid %s",
 						    childTableName, refTableName, refUuid);

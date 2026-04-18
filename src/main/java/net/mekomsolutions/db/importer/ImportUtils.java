@@ -114,14 +114,13 @@ public class ImportUtils {
 	 * Inserts a placeholder row into the referenced subclass table based on the provided foreign key
 	 * and parentId.
 	 *
-	 * @param fk the foreign key describing the relationship between the tables
+	 * @param tableName the name of the table to insert the row.
 	 * @param parentId the id of the parent row to associate with the placeholder child row
 	 * @param metadataExtractor {@link MetadataExtractor} instance
 	 * @param sinkDbHelper {@link SinkDbHelper} instance
 	 */
-	protected static void insertPlaceholderChildRow(ForeignKey fk, Object parentId, MetadataExtractor metadataExtractor,
+	protected static void insertPlaceholderChildRow(String tableName, Object parentId, MetadataExtractor metadataExtractor,
 	                                                SinkDbHelper sinkDbHelper) {
-		final String tableName = fk.referencedTable();
 		Table table = metadataExtractor.getTable(tableName);
 		List<Column> requiredColumns = getRequiredColumns(table);
 		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
@@ -166,7 +165,7 @@ public class ImportUtils {
 					value = DbUtils.getPlaceHolder(col, tableName);
 				} else if (uuid == null && isUserSelfReference(tableName, colName)) {
 					if (log.isDebugEnabled()) {
-						String msg = "Setting {} for phantom row in sink table {} to daemon user id";
+						final String msg = "Setting {} for phantom row in sink table {} to daemon user id";
 						log.debug(msg, colName, tableName);
 					}
 					
