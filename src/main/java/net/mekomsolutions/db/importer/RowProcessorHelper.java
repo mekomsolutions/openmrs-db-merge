@@ -108,21 +108,22 @@ public class RowProcessorHelper {
 	}
 	
 	private Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
-		String refTableName = fk.referenceTable();
+		String refTableName = fk.referencedTable();
 		String refColName = fk.referencedColumn();
 		boolean isSubclassTable = ImportUtils.isSubclassTable(refTableName);
 		if (isSubclassTable) {
 			//For subclasses, the uuid is in the parent table
 			Table refTable = metadataExtractor.getTable(refTableName);
 			ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
-			refTableName = parentFk.referenceTable();
+			refTableName = parentFk.referencedTable();
 			refColName = parentFk.referencedColumn();
 		}
 		
 		if (log.isDebugEnabled()) {
-			final String msg = isSubclassTable ? "source " + refTableName + " row joined to " + fk.referenceTable() + " row"
+			final String message = isSubclassTable
+			        ? "source " + refTableName + " row joined to " + fk.referencedTable() + " row"
 			        : "source " + refTableName + " row";
-			log.debug("Getting {} referenced by {}.{}", msg, table.name(), fk.columnName());
+			log.debug("Getting {} referenced by {}.{}", message, table.name(), fk.columnName());
 		}
 		
 		Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
@@ -147,13 +148,13 @@ public class RowProcessorHelper {
 					    refUuid, table.name(), fk.columnName());
 				}
 				
-				sinkValue = ImportUtils.insertPlaceholderRow(fk.referenceTable(), fk.referencedColumn(), refUuid,
+				sinkValue = ImportUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
 				    metadataExtractor, sinkDbHelper);
 			} else {
 				//For subclass table, insert child row if it does not exist
 				log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);
 				if (isSubclassTable) {
-					final String childTableName = fk.referenceTable();
+					final String childTableName = fk.referencedTable();
 					final String childColName = fk.columnName();
 					if (!sinkDbHelper.checkIfRowExists(childTableName, childColName, refUuid)) {
 						log.debug("Inserting child row into table {} for parent row in table {} with uuid {}",

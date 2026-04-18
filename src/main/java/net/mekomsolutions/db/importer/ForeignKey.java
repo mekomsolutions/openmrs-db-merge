@@ -1,6 +1,6 @@
 package net.mekomsolutions.db.importer;
 
-public record ForeignKey(String name, String columnName, String referenceTable, String referencedColumn) {
+public record ForeignKey(String name, String columnName, String referencedTable, String referencedColumn) {
 	
 	@Override
 	public boolean equals(Object object) {

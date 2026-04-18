@@ -84,7 +84,7 @@ public class ImportUtils {
 			//For subclass table we first insert into the parent table
 			//TODO This code is actually duplicated from RowProcessorHelper, may set it on the Table object
 			ForeignKey parentFk = refTable.getColumn(referencedColumnName).foreignKey();
-			String parentTableName = parentFk.referenceTable();
+			String parentTableName = parentFk.referencedTable();
 			Table parentTable = metadataExtractor.getTable(parentTableName);
 			List<Column> parentRequiredColumns = getRequiredColumns(parentTable);
 			
@@ -121,7 +121,7 @@ public class ImportUtils {
 	 */
 	protected static void insertPlaceholderChildRow(ForeignKey fk, Object parentId, MetadataExtractor metadataExtractor,
 	                                                SinkDbHelper sinkDbHelper) {
-		final String tableName = fk.referenceTable();
+		final String tableName = fk.referencedTable();
 		Table table = metadataExtractor.getTable(tableName);
 		List<Column> requiredColumns = getRequiredColumns(table);
 		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
@@ -237,7 +237,7 @@ public class ImportUtils {
 	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
 		
-		final String refTableName = fk.referenceTable();
+		final String refTableName = fk.referencedTable();
 		final String refColName = fk.referencedColumn();
 		Object phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
 		if (phantomRowId == null) {
@@ -251,7 +251,7 @@ public class ImportUtils {
 						    referencingTableName, fk.columnName());
 					}
 					
-					phantomRowId = insertPlaceholderRow(fk.referenceTable(), fk.referencedColumn(), null, metadataExtractor,
+					phantomRowId = insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), null, metadataExtractor,
 					    sinkDbHelper);
 				}
 			}
