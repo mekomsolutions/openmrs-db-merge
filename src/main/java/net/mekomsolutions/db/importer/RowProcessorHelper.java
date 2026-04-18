@@ -142,7 +142,13 @@ public class RowProcessorHelper {
 			refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
 			sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
 			if (sinkValue == null) {
-				sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor, sinkDbHelper);
+				if (log.isDebugEnabled()) {
+					log.debug("Inserting placeholder row into sink table {} with uuid {} referenced by {}.{}", refTableName,
+					    refUuid, table.name(), fk.columnName());
+				}
+				
+				sinkValue = ImportUtils.insertPlaceholderRow(fk.referenceTable(), fk.referencedColumn(), refUuid,
+				    metadataExtractor, sinkDbHelper);
 			} else {
 				//For subclass table, insert child row if it does not exist
 				log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);

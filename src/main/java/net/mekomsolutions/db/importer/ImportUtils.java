@@ -71,35 +71,26 @@ public class ImportUtils {
 		return primaryKeys.size() == 2 && columns.size() == 2;
 	}
 	
-	protected static Object insertPlaceholderRow(ForeignKey fk, String referencingTableName, Object uuid,
+	protected static Object insertPlaceholderRow(String tableName, String referencedColumnName, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
 		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
 		//placeholder row
-		final String refTableName = fk.referenceTable();
-		if (log.isDebugEnabled()) {
-			final String fromColName = fk.columnName();
-			final String kind = uuid == null ? "phantom" : "placeholder";
-			final Object Uid = uuid == null ? PHANTOM_UUID : uuid;
-			log.debug("Inserting {} row into sink table {} with uuid {} referenced by {}.{}", kind, refTableName, Uid,
-			    referencingTableName, fromColName);
-		}
-		
-		Table refTable = metadataExtractor.getTable(refTableName);
+		Table refTable = metadataExtractor.getTable(tableName);
 		List<Column> requiredColumns = getRequiredColumns(refTable);
 		Object parentId = null;
-		boolean isSubclassTable = isSubclassTable(refTableName);
+		boolean isSubclassTable = isSubclassTable(tableName);
 		if (isSubclassTable) {
 			//For subclass table we first insert into the parent table
 			//TODO This code is actually duplicated from RowProcessorHelper, may set it on the Table object
-			ForeignKey parentFk = refTable.getColumn(fk.referencedColumn()).foreignKey();
+			ForeignKey parentFk = refTable.getColumn(referencedColumnName).foreignKey();
 			String parentTableName = parentFk.referenceTable();
 			Table parentTable = metadataExtractor.getTable(parentTableName);
 			List<Column> parentRequiredColumns = getRequiredColumns(parentTable);
 			
 			if (log.isDebugEnabled()) {
 				log.debug("Inserting parent row into sink table {} with uuid {} for child row in table {}", parentTableName,
-				    uuid, refTableName);
+				    uuid, tableName);
 			}
 			
 			Object[] parentValues = createPlaceholderRow(parentTableName, parentRequiredColumns, uuid, metadataExtractor,
@@ -108,7 +99,7 @@ public class ImportUtils {
 			    parentValues);
 		}
 		
-		Object[] values = createPlaceholderRow(refTableName, requiredColumns, uuid, metadataExtractor, sinkDbHelper);
+		Object[] values = createPlaceholderRow(tableName, requiredColumns, uuid, metadataExtractor, sinkDbHelper);
 		List<String> columnNames = requiredColumns.stream().map(Column::name).toList();
 		if (isSubclassTable) {
 			columnNames = new ArrayList<>(columnNames);
@@ -116,7 +107,7 @@ public class ImportUtils {
 			values = ArrayUtils.add(values, parentId);
 		}
 		
-		return sinkDbHelper.insertRow(refTableName, columnNames, values);
+		return sinkDbHelper.insertRow(tableName, columnNames, values);
 	}
 	
 	/**
@@ -243,7 +234,7 @@ public class ImportUtils {
 		return rowId;
 	}
 	
-	private static Object getPhantomRowId(ForeignKey fk, String fkTableName, MetadataExtractor metadataExtractor,
+	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
 		
 		final String refTableName = fk.referenceTable();
@@ -255,8 +246,13 @@ public class ImportUtils {
 			synchronized (ImportUtils.class) {
 				phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
 				if (phantomRowId == null) {
-					//Insert the phantom row
-					phantomRowId = insertPlaceholderRow(fk, fkTableName, null, metadataExtractor, sinkDbHelper);
+					if (log.isDebugEnabled()) {
+						log.debug("Inserting phantom row into sink table {} referenced by {}.{}", refTableName,
+						    referencingTableName, fk.columnName());
+					}
+					
+					phantomRowId = insertPlaceholderRow(fk.referenceTable(), fk.referencedColumn(), null, metadataExtractor,
+					    sinkDbHelper);
 				}
 			}
 		}
