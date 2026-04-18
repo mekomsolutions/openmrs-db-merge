@@ -71,7 +71,7 @@ public class ImportUtils {
 		return primaryKeys.size() == 2 && columns.size() == 2;
 	}
 	
-	protected static Object insertPlaceholderRow(ForeignKey fk, String fkTableName, Object uuid,
+	protected static Object insertPlaceholderRow(ForeignKey fk, String referencingTableName, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
 		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
@@ -82,7 +82,7 @@ public class ImportUtils {
 			final String kind = uuid == null ? "phantom" : "placeholder";
 			final Object Uid = uuid == null ? PHANTOM_UUID : uuid;
 			log.debug("Inserting {} row into sink table {} with uuid {} referenced by {}.{}", kind, refTableName, Uid,
-			    fkTableName, fromColName);
+			    referencingTableName, fromColName);
 		}
 		
 		Table refTable = metadataExtractor.getTable(refTableName);
@@ -102,13 +102,13 @@ public class ImportUtils {
 				    uuid, refTableName);
 			}
 			
-			Object[] parentValues = createPlaceholderRow(parentFk, parentRequiredColumns, uuid, metadataExtractor,
+			Object[] parentValues = createPlaceholderRow(parentTableName, parentRequiredColumns, uuid, metadataExtractor,
 			    sinkDbHelper);
 			parentId = sinkDbHelper.insertRow(parentTableName, parentRequiredColumns.stream().map(Column::name).toList(),
 			    parentValues);
 		}
 		
-		Object[] values = createPlaceholderRow(fk, requiredColumns, uuid, metadataExtractor, sinkDbHelper);
+		Object[] values = createPlaceholderRow(refTableName, requiredColumns, uuid, metadataExtractor, sinkDbHelper);
 		List<String> columnNames = requiredColumns.stream().map(Column::name).toList();
 		if (isSubclassTable) {
 			columnNames = new ArrayList<>(columnNames);
@@ -135,15 +135,14 @@ public class ImportUtils {
 		List<Column> requiredColumns = getRequiredColumns(table);
 		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
 		columnNames.add(table.primaryKeys().get(0));
-		Object[] values = createPlaceholderRow(fk, requiredColumns, null, metadataExtractor, sinkDbHelper);
+		Object[] values = createPlaceholderRow(tableName, requiredColumns, null, metadataExtractor, sinkDbHelper);
 		values = ArrayUtils.add(values, parentId);
 		sinkDbHelper.insertRow(tableName, columnNames, values);
 	}
 	
-	private static Object[] createPlaceholderRow(ForeignKey fk, List<Column> requiredColumns, Object uuid,
+	private static Object[] createPlaceholderRow(String tableName, List<Column> requiredColumns, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
-		final String refTableName = fk.referenceTable();
 		Object[] values = new Object[requiredColumns.size()];
 		int index = 0;
 		for (Column col : requiredColumns) {
@@ -159,7 +158,7 @@ public class ImportUtils {
 			} else if ("voided".equals(colName) || "retired".equals(colName)) {
 				if (log.isDebugEnabled()) {
 					final String kind = uuid == null ? "phantom" : "placeholder";
-					log.debug("Marking {} row {} in sink table {} as {}", kind, colName, refTableName, colName);
+					log.debug("Marking {} row {} in sink table {} as {}", kind, colName, tableName, colName);
 				}
 				
 				if (Types.BOOLEAN == col.sqlType()) {
@@ -167,24 +166,23 @@ public class ImportUtils {
 				} else if (Types.BIT == col.sqlType()) {
 					value = 1;
 				} else {
-					String msg = "Don't know how handle type: " + col.sqlType() + " for column " + refTableName + "."
-					        + colName;
+					String msg = "Don't know how handle type: " + col.sqlType() + " for column " + tableName + "." + colName;
 					throw new RuntimeException(msg);
 				}
 			} else {
 				ForeignKey colFk = col.foreignKey();
 				if (colFk == null) {
-					value = DbUtils.getPlaceHolder(col, refTableName);
-				} else if (uuid == null && isUserSelfReference(refTableName, colName)) {
+					value = DbUtils.getPlaceHolder(col, tableName);
+				} else if (uuid == null && isUserSelfReference(tableName, colName)) {
 					if (log.isDebugEnabled()) {
 						String msg = "Setting {} for phantom row in sink table {} to daemon user id";
-						log.debug(msg, colName, refTableName);
+						log.debug(msg, colName, tableName);
 					}
 					
 					//TODO After the row is inserted, switch back to the self reference except for creator field.
 					value = getDaemonUserId(sinkDbHelper);
 				} else {
-					value = getPhantomRowId(colFk, refTableName, metadataExtractor, sinkDbHelper);
+					value = getPhantomRowId(colFk, tableName, metadataExtractor, sinkDbHelper);
 				}
 			}
 			
