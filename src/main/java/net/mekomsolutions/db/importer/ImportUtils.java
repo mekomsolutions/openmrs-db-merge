@@ -116,8 +116,28 @@ public class ImportUtils {
 			values = ArrayUtils.add(values, parentId);
 		}
 		
-		final Object id = sinkDbHelper.insertRow(refTableName, columnNames, values);
-		return isSubclassTable ? parentId : id;
+		return sinkDbHelper.insertRow(refTableName, columnNames, values);
+	}
+	
+	/**
+	 * Inserts a placeholder row into the referenced subclass table based on the provided foreign key
+	 * and parentId.
+	 *
+	 * @param fk the foreign key describing the relationship between the tables
+	 * @param parentId the id of the parent row to associate with the placeholder child row
+	 * @param metadataExtractor {@link MetadataExtractor} instance
+	 * @param sinkDbHelper {@link SinkDbHelper} instance
+	 */
+	protected static void insertPlaceholderChildRow(ForeignKey fk, Object parentId, MetadataExtractor metadataExtractor,
+	                                                SinkDbHelper sinkDbHelper) {
+		final String tableName = fk.referenceTable();
+		Table table = metadataExtractor.getTable(tableName);
+		List<Column> requiredColumns = getRequiredColumns(table);
+		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
+		columnNames.add(table.primaryKeys().get(0));
+		Object[] values = createPlaceholderRow(fk, requiredColumns, null, metadataExtractor, sinkDbHelper);
+		values = ArrayUtils.add(values, parentId);
+		sinkDbHelper.insertRow(tableName, columnNames, values);
 	}
 	
 	private static Object[] createPlaceholderRow(ForeignKey fk, List<Column> requiredColumns, Object uuid,

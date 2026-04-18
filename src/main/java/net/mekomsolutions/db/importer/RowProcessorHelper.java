@@ -143,6 +143,22 @@ public class RowProcessorHelper {
 			sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
 			if (sinkValue == null) {
 				sinkValue = ImportUtils.insertPlaceholderRow(fk, table.name(), refUuid, metadataExtractor, sinkDbHelper);
+			} else {
+				//For subclass table, insert child row if it does not exist
+				log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);
+				if (isSubclassTable) {
+					final String childTableName = fk.referenceTable();
+					final String childColName = fk.columnName();
+					if (!sinkDbHelper.checkIfRowExists(childTableName, childColName, refUuid)) {
+						log.debug("Inserting child row into table {} for parent row in table {} with uuid {}",
+						    childTableName, refTableName, refUuid);
+						ImportUtils.insertPlaceholderChildRow(fk, sinkValue, metadataExtractor, sinkDbHelper);
+					} else if (log.isDebugEnabled()) {
+						final String msg = String.format("Child row exists in table %s for parent row in %s uuid %s",
+						    childTableName, refTableName, refUuid);
+						log.debug(msg);
+					}
+				}
 			}
 		}
 		

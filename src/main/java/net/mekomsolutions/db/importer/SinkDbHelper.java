@@ -167,4 +167,27 @@ public class SinkDbHelper {
 		}
 	}
 	
+	/**
+	 * Checks whether a row exists in the specified table based on the given column value.
+	 *
+	 * @param tableName the name of the database table to check
+	 * @param columnName the name of the column to use for matching
+	 * @param columnValue the value to check for in the specified column
+	 * @return true if the row exists, false otherwise
+	 */
+	public boolean checkIfRowExists(String tableName, String columnName, Object columnValue) {
+		if (log.isDebugEnabled()) {
+			log.debug("Checking existence of a row in table {} where {} = {}", tableName, columnName, columnValue);
+		}
+		
+		String query = String.format("SELECT COUNT(*) FROM %s WHERE %s = ?", tableName, columnName);
+		try {
+			return jdbcTemplate.queryForObject(query, new Object[] { columnValue }, int.class) > 0;
+		}
+		catch (Exception e) {
+			final String msg = String.format("Failed to check existence of a row in table %s where %s = %s", tableName,
+			    columnName, columnValue);
+			throw new RuntimeException(msg, e);
+		}
+	}
 }
