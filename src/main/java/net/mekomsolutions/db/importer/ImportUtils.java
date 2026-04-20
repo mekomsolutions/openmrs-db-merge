@@ -87,10 +87,10 @@ public class ImportUtils {
 			String parentTableName = parentFk.referencedTable();
 			Table parentTable = metadataExtractor.getTable(parentTableName);
 			List<Column> parentRequiredColumns = getRequiredColumns(parentTable);
-			
 			if (log.isDebugEnabled()) {
-				log.debug("Inserting parent row into sink table {} with uuid {} for child row in table {}", parentTableName,
-				    uuid, tableName);
+				log.debug(
+				    "Preparing parent placeholder row to insert into sink table {} with uuid {} for child row in table {}",
+				    parentTableName, uuid, tableName);
 			}
 			
 			Object[] parentValues = createPlaceholderRow(parentTableName, parentRequiredColumns, uuid, metadataExtractor,
@@ -246,7 +246,7 @@ public class ImportUtils {
 				phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
 				if (phantomRowId == null) {
 					if (log.isDebugEnabled()) {
-						log.debug("Inserting phantom row into sink table {} referenced by {}.{}", refTableName,
+						log.debug("Preparing phantom row to insert into sink table {} referenced by {}.{}", refTableName,
 						    referencingTableName, fk.columnName());
 					}
 					

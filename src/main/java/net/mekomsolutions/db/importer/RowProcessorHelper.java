@@ -147,8 +147,8 @@ public class RowProcessorHelper {
 			if (sinkValue == null) {
 				if (log.isDebugEnabled()) {
 					final String msg = String.format(
-					    "Inserting placeholder row into sink table %s with uuid %s referenced by %s.%s", refTableName,
-					    refUuid, table.name(), fk.columnName());
+					    "Preparing placeholder row to insert into sink table %s with uuid %s referenced by %s.%s",
+					    refTableName, refUuid, table.name(), fk.columnName());
 					log.debug(msg);
 				}
 				
@@ -157,7 +157,7 @@ public class RowProcessorHelper {
 			} else {
 				//For subclass table, insert child row if it does not exist
 				if (log.isDebugEnabled()) {
-					log.debug("Found existing reference row in sink table {} with uuid {}", refTableName, refUuid);
+					log.debug("Found existing referenced row in sink table {} with uuid {}", refTableName, refUuid);
 				}
 				
 				if (isSubclassTable) {
@@ -165,7 +165,8 @@ public class RowProcessorHelper {
 					final String childColName = fk.columnName();
 					if (!sinkDbHelper.checkIfRowExists(childTableName, childColName, refUuid)) {
 						if (log.isDebugEnabled()) {
-							log.debug("Inserting child row into table {} for parent row in table {} with uuid {}",
+							log.debug(
+							    "Preparing placeholder child row to insert into table {} for parent row in table {} with uuid {}",
 							    childTableName, refTableName, refUuid);
 						}
 						
