@@ -1,6 +1,7 @@
 package net.mekomsolutions.db.importer;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -68,6 +69,37 @@ public class SinkDbHelper {
 		catch (Exception e) {
 			final String message = "Failed to get " + columName + " value for row with " + filterColumnName + " "
 			        + filterColumnValue + " from sink table " + table;
+			throw new RuntimeException(message, e);
+		}
+	}
+	
+	/**
+	 * Retrieves the primary key of a row from a subclass table by performing a join with the parent
+	 * table using specified columns and filtering by the given uuid.
+	 *
+	 * @param uuid the uuid value in the parent table
+	 * @param subclassTableName the name of the subclass table
+	 * @param subclassPkColumn the primary key column name in the subclass table
+	 * @param parentTableName the name of the parent table
+	 * @param parentPkColumn the primary key column name in the parent table
+	 * @return the ID of the row in the subclass table, or null if not found
+	 */
+	public Object getSubclassRowId(Object uuid, String subclassTableName, String subclassPkColumn, String parentTableName,
+	                               String parentPkColumn) {
+		
+		String query = String.format("SELECT s.%s FROM %s s INNER JOIN %s p ON s.%s = p.%s WHERE LOWER(p.uuid) = ?",
+		    subclassPkColumn, subclassTableName, parentTableName, subclassPkColumn, parentPkColumn);
+		try {
+			uuid = uuid.toString().toLowerCase(Locale.ENGLISH);
+			return jdbcTemplate.queryForObject(query, new Object[] { uuid }, Object.class);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+		catch (Exception e) {
+			final String message = String.format(
+			    "Failed to get row ID from subclass table %s where parent table %s has uuid %s", subclassTableName,
+			    parentTableName, uuid);
 			throw new RuntimeException(message, e);
 		}
 	}

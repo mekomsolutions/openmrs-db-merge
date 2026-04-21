@@ -93,8 +93,8 @@ public class ImportUtils {
 				    parentTableName, uuid, tableName);
 			}
 			
-			Object[] parentValues = createPlaceholderRow(parentTableName, parentRequiredColumns, uuid, metadataExtractor,
-			    sinkDbHelper);
+			final Object[] parentValues = createPlaceholderRow(parentTableName, parentRequiredColumns, uuid,
+			    metadataExtractor, sinkDbHelper);
 			parentId = sinkDbHelper.insertRow(parentTableName, parentRequiredColumns.stream().map(Column::name).toList(),
 			    parentValues);
 		}
@@ -148,7 +148,7 @@ public class ImportUtils {
 			} else if ("voided".equals(colName) || "retired".equals(colName)) {
 				if (log.isDebugEnabled()) {
 					final String kind = uuid == null ? "phantom" : "placeholder";
-					log.debug("Marking {} row {} in sink table {} as {}", kind, colName, tableName, colName);
+					log.debug("Setting {} to true for {} row in sink table {}", colName, kind, tableName);
 				}
 				
 				if (Types.BOOLEAN == col.sqlType()) {
@@ -235,25 +235,76 @@ public class ImportUtils {
 	
 	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
-		
+		//TODO Cache phantom row id for each table
 		final String refTableName = fk.referencedTable();
 		final String refColName = fk.referencedColumn();
-		Object phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
+		boolean isSubclassTable = ImportUtils.isSubclassTable(refTableName);
+		Object phantomRowId = null;
+		ForeignKey parentFk = null;
+		String effectiveRefTableName = refTableName;
+		String effectiveRefColName = refColName;
+		if (isSubclassTable) {
+			Table refTable = metadataExtractor.getTable(refTableName);
+			parentFk = refTable.getColumn(refColName).foreignKey();
+			effectiveRefTableName = parentFk.referencedTable();
+			effectiveRefColName = parentFk.referencedColumn();
+			if (log.isDebugEnabled()) {
+				log.debug("Getting phantom row id in sink subclass table {}", refTableName);
+			}
+			
+			phantomRowId = sinkDbHelper.getSubclassRowId(PHANTOM_UUID, refTableName, refColName, effectiveRefTableName,
+			    effectiveRefColName);
+		}
+		
+		if (phantomRowId != null) {
+			if (log.isDebugEnabled()) {
+				log.debug("Found existing phantom row in sink table {} referenced by {}.{}", refTableName,
+				    referencingTableName, fk.columnName());
+			}
+		}
+		
+		if (log.isDebugEnabled()) {
+			final String message = isSubclassTable
+			        ? "phantom row in sink table " + refTableName + " joined to " + parentFk.referencedTable() + " row"
+			        : "phantom row in sink table " + refTableName;
+			log.debug("Getting {} referenced by {}.{}", message, referencingTableName, fk.columnName());
+		}
+		
+		phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)", PHANTOM_UUID);
 		if (phantomRowId == null) {
 			//We don't want concurrent inserts of phantom row which would result in unique constraint violation on
 			//the uuid column
 			synchronized (ImportUtils.class) {
-				phantomRowId = sinkDbHelper.getColumnValue(refTableName, refColName, "UPPER(uuid)", PHANTOM_UUID);
+				phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)",
+				    PHANTOM_UUID);
 				if (phantomRowId == null) {
 					if (log.isDebugEnabled()) {
-						log.debug("Preparing phantom row to insert into sink table {} referenced by {}.{}", refTableName,
-						    referencingTableName, fk.columnName());
+						log.debug("Preparing phantom row to insert into sink table {} referenced by {}.{}",
+						    effectiveRefTableName, referencingTableName, fk.columnName());
 					}
 					
 					phantomRowId = insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), null, metadataExtractor,
 					    sinkDbHelper);
+				} else {
+					if (log.isDebugEnabled()) {
+						log.debug("Found existing phantom row in sink table {} referenced by {}.{}", effectiveRefTableName,
+						    referencingTableName, fk.columnName());
+					}
 				}
 			}
+		} else {
+			if (log.isDebugEnabled()) {
+				log.debug("Found existing phantom row in sink table {} referenced by {}.{}", effectiveRefTableName,
+				    referencingTableName, fk.columnName());
+			}
+		}
+		
+		if (isSubclassTable) {
+			if (log.isDebugEnabled()) {
+				log.debug("Preparing phantom row to insert into sink subclass table {}", refTableName);
+			}
+			
+			insertPlaceholderChildRow(refTableName, phantomRowId, metadataExtractor, sinkDbHelper);
 		}
 		
 		return phantomRowId;
