@@ -273,6 +273,7 @@ public class ImportUtils {
 			log.trace("Getting {} referenced by {}.{}", message, referencingTableName, fk.columnName());
 		}
 		
+		boolean phantomRowExists = false;
 		phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)", PHANTOM_UUID);
 		if (phantomRowId == null) {
 			//We don't want concurrent inserts of phantom row which would result in unique constraint violation on
@@ -289,17 +290,16 @@ public class ImportUtils {
 					phantomRowId = insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), null, metadataExtractor,
 					    sinkDbHelper);
 				} else {
-					if (log.isTraceEnabled()) {
-						log.trace("Found existing phantom row in sink table {} referenced by {}.{}", effectiveRefTableName,
-						    referencingTableName, fk.columnName());
-					}
+					phantomRowExists = true;
 				}
 			}
 		} else {
-			if (log.isTraceEnabled()) {
-				log.trace("Found existing phantom row in sink table {} referenced by {}.{}", effectiveRefTableName,
-				    referencingTableName, fk.columnName());
-			}
+			phantomRowExists = true;
+		}
+		
+		if (log.isTraceEnabled() && phantomRowExists) {
+			log.trace("Found existing phantom row in sink table {} referenced by {}.{}", effectiveRefTableName,
+			    referencingTableName, fk.columnName());
 		}
 		
 		if (isSubclassTable) {
