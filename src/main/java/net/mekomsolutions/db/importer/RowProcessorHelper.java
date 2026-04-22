@@ -1,6 +1,6 @@
 package net.mekomsolutions.db.importer;
 
-import static net.mekomsolutions.db.importer.ImportUtils.insertPlaceholderChildRow;
+import static net.mekomsolutions.db.importer.ImportUtils.insertPlaceholderSubclassRow;
 
 import java.util.Locale;
 import java.util.Map;
@@ -110,28 +110,30 @@ public class RowProcessorHelper {
 	}
 	
 	private Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
-		String refTableName = fk.referencedTable();
-		String refColName = fk.referencedColumn();
-		boolean isSubclassTable = ImportUtils.isSubclassTable(refTableName);
+		String baseRefTableName = fk.referencedTable();
+		String baseRefColName = fk.referencedColumn();
+		String effectiveRefTableName = fk.referencedTable();
+		String effectiveRefColName = fk.referencedColumn();
+		boolean isSubclassTable = ImportUtils.isSubclassTable(baseRefTableName);
 		if (isSubclassTable) {
 			//For subclasses, the uuid is in the parent table
-			Table refTable = metadataExtractor.getTable(refTableName);
-			ForeignKey parentFk = refTable.getColumn(refColName).foreignKey();
-			refTableName = parentFk.referencedTable();
-			refColName = parentFk.referencedColumn();
+			Table refTable = metadataExtractor.getTable(baseRefTableName);
+			ForeignKey parentFk = refTable.getColumn(baseRefColName).foreignKey();
+			effectiveRefTableName = parentFk.referencedTable();
+			effectiveRefColName = parentFk.referencedColumn();
 		}
 		
 		if (log.isDebugEnabled()) {
 			final String message = isSubclassTable
-			        ? "source " + refTableName + " row joined to " + fk.referencedTable() + " row"
-			        : "source " + refTableName + " row";
+			        ? "source " + baseRefTableName + " row joined to " + effectiveRefTableName + " row"
+			        : "source " + baseRefTableName + " row";
 			log.debug("Getting {} referenced by {}.{}", message, table.name(), fk.columnName());
 		}
 		
-		Object refUuid = sourceDbHelper.getUuid(refTableName, refColName, value);
+		Object refUuid = sourceDbHelper.getUuid(effectiveRefTableName, effectiveRefColName, value);
 		if (refUuid == null) {
-			String msg = String.format("Failed to find referenced row in source table %s with %s = %s", refTableName,
-			    refColName, value);
+			String msg = String.format("Failed to find referenced row in source table %s with %s = %s",
+			    effectiveRefTableName, effectiveRefColName, value);
 			throw new RuntimeException(msg);
 		}
 		
@@ -143,38 +145,36 @@ public class RowProcessorHelper {
 			//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
 			//repeatedly reference the same row
 			refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
-			sinkValue = sinkDbHelper.getColumnValue(refTableName, refColName, "LOWER(uuid)", refUuid);
+			sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "LOWER(uuid)", refUuid);
 			if (sinkValue == null) {
 				if (log.isDebugEnabled()) {
 					final String msg = String.format(
 					    "Preparing placeholder row to insert into sink table %s with uuid %s referenced by %s.%s",
-					    refTableName, refUuid, table.name(), fk.columnName());
+					    effectiveRefTableName, refUuid, table.name(), fk.columnName());
 					log.debug(msg);
 				}
 				
 				sinkValue = ImportUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
 				    metadataExtractor, sinkDbHelper);
 			} else {
-				//For subclass table, insert child row if it does not exist
 				if (log.isDebugEnabled()) {
-					log.debug("Found existing referenced row in sink table {} with uuid {}", refTableName, refUuid);
+					log.debug("Found referenced row in sink table {} with uuid {}, its {} = {}", effectiveRefTableName,
+					    refUuid, effectiveRefColName, sinkValue);
 				}
 				
 				if (isSubclassTable) {
-					final String childTableName = fk.referencedTable();
-					final String childColName = fk.columnName();
-					if (!sinkDbHelper.checkIfRowExists(childTableName, childColName, refUuid)) {
+					//For subclass table, insert subclass row if it does not exist
+					if (!sinkDbHelper.checkIfRowExists(baseRefTableName, baseRefColName, sinkValue)) {
 						if (log.isDebugEnabled()) {
-							log.debug(
-							    "Preparing placeholder child row to insert into table {} for parent row in table {} with uuid {}",
-							    childTableName, refTableName, refUuid);
+							log.debug("Preparing placeholder subclass row to insert into sink table {} for parent row "
+							        + "in table {} with uuid {}",
+							    baseRefTableName, effectiveRefTableName, refUuid);
 						}
 						
-						insertPlaceholderChildRow(childTableName, sinkValue, metadataExtractor, sinkDbHelper);
+						insertPlaceholderSubclassRow(baseRefTableName, sinkValue, metadataExtractor, sinkDbHelper);
 					} else if (log.isDebugEnabled()) {
-						final String msg = String.format("Child row exists in table %s for parent row in %s uuid %s",
-						    childTableName, refTableName, refUuid);
-						log.debug(msg);
+						log.debug("Subclass row exists in sink table {} for parent row in table {} with uuid {}",
+						    baseRefTableName, effectiveRefTableName, refUuid);
 					}
 				}
 			}
