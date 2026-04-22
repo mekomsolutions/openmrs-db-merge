@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -44,7 +45,13 @@ public class BatchConfig {
 	}
 	
 	@Bean
-	public Job importJob(JobRepository jobRepository, StepFactory stepFactory, MetadataExtractor metadataExtractor,
+	public MetadataExtractor sourceExtractor(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
+		return new MetadataExtractor("source", jdbcTemplate, false);
+	}
+	
+	@Bean
+	public Job importJob(JobRepository jobRepository, StepFactory stepFactory,
+	                     @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
 	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener listener)

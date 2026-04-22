@@ -32,7 +32,7 @@ public class SourceDbHelper {
 	 */
 	public boolean isTableEmpty(String table) {
 		if (log.isDebugEnabled()) {
-			log.debug("Checking if table {} is empty", table);
+			log.debug("Checking if source table {} is empty", table);
 		}
 		
 		String query = String.format("SELECT COUNT(*) FROM %s", table);
@@ -40,7 +40,7 @@ public class SourceDbHelper {
 			return jdbcTemplate.queryForObject(query, Integer.class) == 0;
 		}
 		catch (Exception e) {
-			String msg = "Failed to check if table " + table + " is empty";
+			String msg = "Failed to check if source table " + table + " is empty";
 			throw new RuntimeException(msg, e);
 		}
 	}
@@ -78,7 +78,7 @@ public class SourceDbHelper {
 	 */
 	public Map<String, Object> getRow(String tableName, List<String> columnNames, Object[] columnValues) {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching row from table {} where {} = {}", tableName, columnNames, columnValues);
+			log.debug("Fetching row from source table {} where {} = {}", tableName, columnNames, columnValues);
 		}
 		
 		String query = String.format("SELECT * FROM %s WHERE ", tableName);
@@ -91,7 +91,8 @@ public class SourceDbHelper {
 		}
 		catch (Exception e) {
 			List<Object> valueList = List.of(columnValues);
-			String msg = "Failed to fetch row from table " + tableName + " where " + columnNames + " = " + valueList;
+			final String msg = "Failed to fetch row from source table " + tableName + " where " + columnNames + " = "
+			        + valueList;
 			throw new RuntimeException(msg, e);
 		}
 	}

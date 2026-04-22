@@ -13,24 +13,27 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Component
 @Slf4j
 public class MetadataExtractor {
 	
+	private String name;
+	
 	private JdbcTemplate jdbcTemplate;
 	
-	// Cache to store table name to Table object mappings
-	private final Map<String, Table> NAME_AND_TABLE_CACHE = new ConcurrentHashMap<>();
+	private boolean requireUuidUniqueConstraint;
 	
-	public MetadataExtractor(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	// Cache to store table name to Table object mappings
+	private Map<String, Table> NAME_AND_TABLE_CACHE = new ConcurrentHashMap<>();
+	
+	public MetadataExtractor(String name, JdbcTemplate jdbcTemplate, boolean requireUuidUniqueConstraint) {
+		this.name = name;
 		this.jdbcTemplate = jdbcTemplate;
+		this.requireUuidUniqueConstraint = requireUuidUniqueConstraint;
 	}
 	
 	/**
@@ -41,7 +44,7 @@ public class MetadataExtractor {
 	 */
 	public List<String> getTableNames() {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching all tables from the database");
+			log.debug("Fetching all tables from the {} database", name);
 		}
 		
 		List<String> tableNames = new ArrayList<>();
@@ -72,7 +75,7 @@ public class MetadataExtractor {
 			synchronized (this) {
 				if (!NAME_AND_TABLE_CACHE.containsKey(tableName)) {
 					if (log.isDebugEnabled()) {
-						log.debug("Fetching metadata for table: {}", tableName);
+						log.debug("Fetching metadata for {} table: {}", name, tableName);
 					}
 					
 					Table table = jdbcTemplate.execute((ConnectionCallback<Table>) connection -> {
@@ -89,7 +92,7 @@ public class MetadataExtractor {
 						if (!ImportUtils.isExtensionTable(keys, columns) && !ImportUtils.isMappingTable(keys, columns)) {
 							if (keys.size() != 1) {
 								throw new RuntimeException(
-								        "Table " + tableName + " has unsupported primary key count " + keys.size());
+								        name + " table " + tableName + " has unsupported primary key count " + keys.size());
 							}
 						}
 						
@@ -97,12 +100,12 @@ public class MetadataExtractor {
 							Column uuidColum = nameColMap.get("uuid");
 							if (uuidColum == null) {
 								//TODO Future Add support for these tables
-								throw new RuntimeException("Table " + tableName + " has no uuid column");
+								throw new RuntimeException(name + " table " + tableName + " has no uuid column");
 							}
 							
-							if (!uniqueColumns.contains("uuid")) {
+							if (requireUuidUniqueConstraint && !uniqueColumns.contains("uuid")) {
 								throw new RuntimeException(
-								        "Table " + tableName + " is missing a unique constraint on uuid column");
+								        name + " table " + tableName + " is missing a unique constraint on uuid column");
 							}
 						}
 						
@@ -128,7 +131,7 @@ public class MetadataExtractor {
 	 */
 	public List<Column> getColumns(String table, Connection con) throws SQLException {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching column metadata for table: {}", table);
+			log.debug("Fetching column metadata for {} table: {}", name, table);
 		}
 		
 		List<Column> columns = new ArrayList<>();
@@ -160,7 +163,7 @@ public class MetadataExtractor {
 	 */
 	public List<String> getPrimaryKeys(String table, Connection connection) throws SQLException {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching primary keys for table: {}", table);
+			log.debug("Fetching primary keys for {} table: {}", name, table);
 		}
 		
 		List<String> primaryKeys = new ArrayList<>();
@@ -188,7 +191,7 @@ public class MetadataExtractor {
 	 */
 	public List<ForeignKey> getForeignKeyMetadata(String table, Connection connection) throws SQLException {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching foreign keys for table: {}", table);
+			log.debug("Fetching foreign keys for {} table: {}", name, table);
 		}
 		
 		//We use a set because of a bug in the MySQL driver where it returns duplicate FKs
@@ -217,7 +220,7 @@ public class MetadataExtractor {
 	 */
 	public List<String> getUniqueColumns(String tableName, Connection connection) throws SQLException {
 		if (log.isDebugEnabled()) {
-			log.debug("Fetching unique columns for table: {}", tableName);
+			log.debug("Fetching unique columns for {} table: {}", name, tableName);
 		}
 		
 		List<String> uniqueColumns = new ArrayList<>();
