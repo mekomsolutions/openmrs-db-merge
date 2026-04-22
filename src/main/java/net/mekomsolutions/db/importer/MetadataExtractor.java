@@ -109,6 +109,14 @@ public class MetadataExtractor {
 							}
 						}
 						
+						if (!isSubclassTable && keys.size() == 1) {
+							String keyColumnName = keys.get(0);
+							if (!nameColMap.get(keyColumnName).autoIncrement()) {
+								throw new RuntimeException(
+								        name + " table " + tableName + " has a non-auto-incrementing primary key column");
+							}
+						}
+						
 						return new Table(tableName, keys, insertColumns, nameColMap);
 					});
 					
