@@ -166,9 +166,10 @@ public class StepFactory {
 		return builder.reader(reader).processor(processor).writer(writer).listener(retryRemover).build();
 	}
 	
-	public List<Step> getSteps(MetadataExtractor metadataExtractor, RowPreparedStatementParamSetter prepStmtParamSetter,
-	                           SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper, RetryWriter retryWriter,
-	                           RetryRemover retryRemover, TaskExecutor executor)
+	public List<Step> getSteps(MetadataExtractor sourceExtractor, MetadataExtractor sinkExtractor,
+	                           RowPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper,
+	                           RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
+	                           TaskExecutor executor)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
@@ -181,27 +182,29 @@ public class StepFactory {
 		}
 		
 		//Skip excluded and empty tables
-		List<String> importTables = metadataExtractor.getTableNames().stream()
+		List<String> mergeTables = sourceExtractor.getTableNames().stream()
 		        .filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).collect(Collectors.toList());
-		log.info("Importing {} tables", importTables.size());
+		log.info("Merging {} tables", mergeTables.size());
+		log.info("Verifying sink tables before merge");
+		mergeTables.forEach(t -> sinkExtractor.getTable(t));
 		if (tableWriterMap == null) {
-			tableWriterMap = new HashMap<>(importTables.size());
+			tableWriterMap = new HashMap<>(mergeTables.size());
 		}
 		
-		importTables.forEach(t -> {
+		mergeTables.forEach(t -> {
 			tableWriterMap.computeIfAbsent(t, k -> {
-				final String sql = ImportUtils.getWriteSql(metadataExtractor.getTable(k));
+				final String sql = ImportUtils.getWriteSql(sourceExtractor.getTable(k));
 				return createBatchWriter(sql, prepStmtParamSetter);
 			});
 		});
 		
-		List<Step> steps = new ArrayList<>(importTables.size());
-		importTables.stream().forEach(t -> {
-			steps.add(createTableStep(t, metadataExtractor, processorHelper, executor));
+		List<Step> steps = new ArrayList<>(mergeTables.size());
+		mergeTables.stream().forEach(t -> {
+			steps.add(createTableStep(t, sourceExtractor, processorHelper, executor));
 		});
 		
 		if (retry) {
-			Step step = createRetryStep(sourceDbHelper, processorHelper, metadataExtractor, retryWriter, retryRemover,
+			Step step = createRetryStep(sourceDbHelper, processorHelper, sourceExtractor, retryWriter, retryRemover,
 			    executor);
 			steps.add(step);
 		}

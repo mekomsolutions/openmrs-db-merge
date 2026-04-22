@@ -36,7 +36,8 @@ public class SinkDbHelper {
 	protected MetadataExtractor metadataExtractor;
 	
 	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate,
-	    NamedParameterJdbcTemplate namedParamJdbcTemplate, MetadataExtractor metadataExtractor) {
+	    NamedParameterJdbcTemplate namedParamJdbcTemplate,
+	    @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.namedParamJdbcTemplate = namedParamJdbcTemplate;
 		this.metadataExtractor = metadataExtractor;

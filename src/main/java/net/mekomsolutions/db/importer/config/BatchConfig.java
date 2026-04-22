@@ -50,16 +50,22 @@ public class BatchConfig {
 	}
 	
 	@Bean
+	public MetadataExtractor sinkExtractor(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate) {
+		return new MetadataExtractor("sink", jdbcTemplate, true);
+	}
+	
+	@Bean
 	public Job importJob(JobRepository jobRepository, StepFactory stepFactory,
-	                     @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
+	                     @Qualifier("sourceExtractor") MetadataExtractor sourceExtractor,
+	                     @Qualifier("sinkExtractor") MetadataExtractor sinkExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
 	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener listener)
 	    throws Exception {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
-		final List<Step> steps = stepFactory.getSteps(metadataExtractor, prepStatementParamSetter, sourceDbHelper,
-		    processorHelper, retryWriter, retryRemover, executor);
+		final List<Step> steps = stepFactory.getSteps(sourceExtractor, sinkExtractor, prepStatementParamSetter,
+		    sourceDbHelper, processorHelper, retryWriter, retryRemover, executor);
 		
 		SimpleJobBuilder builder = null;
 		for (Step step : steps) {

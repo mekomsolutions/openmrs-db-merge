@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +23,8 @@ public class RowProcessorHelper {
 	
 	private ImportDbHelper importDbHelper;
 	
-	public RowProcessorHelper(MetadataExtractor metadataExtractor, SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper,
-	    ImportDbHelper importDbHelper) {
+	public RowProcessorHelper(@Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
+	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper) {
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
