@@ -185,6 +185,7 @@ public class StepFactory {
 		List<String> mergeTables = sourceExtractor.getTableNames().stream()
 		        .filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).collect(Collectors.toList());
 		log.info("Merging {} tables", mergeTables.size());
+		ImportUtils.setMergeTables(mergeTables);
 		log.info("Verifying sink tables before merge");
 		mergeTables.forEach(t -> sinkExtractor.getTable(t));
 		if (tableWriterMap == null) {

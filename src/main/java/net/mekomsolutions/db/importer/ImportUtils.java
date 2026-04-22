@@ -26,6 +26,12 @@ public class ImportUtils {
 	
 	private static Integer daemonUserId;
 	
+	private static List<String> mergeTables;
+	
+	protected static void setMergeTables(List<String> tables) {
+		mergeTables = new ArrayList<>(tables);
+	}
+	
 	protected static String getWriteSql(Table table) {
 		final String tableName = table.name();
 		//Note that for many-to-many mapping tables with exactly 2 columns, the resulting query would be as below
@@ -73,6 +79,11 @@ public class ImportUtils {
 	
 	protected static Object insertPlaceholderRow(String tableName, String referencedColumnName, Object uuid,
 	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
+		
+		if (!mergeTables.contains(tableName)) {
+			throw new RuntimeException(
+			        "Cannot reference placeholder row in table " + tableName + " that is not in the merge list");
+		}
 		
 		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
 		//placeholder row
@@ -235,6 +246,12 @@ public class ImportUtils {
 	
 	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
+		
+		if (!mergeTables.contains(fk.referencedTable())) {
+			throw new RuntimeException(
+			        "Cannot reference a phantom row in table " + fk.referencedTable() + " that is not in the merge list");
+		}
+		
 		//TODO Cache phantom row id for each table
 		final String refTableName = fk.referencedTable();
 		final String refColName = fk.referencedColumn();
