@@ -1,6 +1,6 @@
 package net.mekomsolutions.db.importer;
 
-import static net.mekomsolutions.db.importer.ImportUtils.insertPlaceholderSubclassRow;
+import static net.mekomsolutions.db.importer.MergeUtils.insertPlaceholderSubclassRow;
 
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class RowProcessorHelper {
 			
 			//TODO Future for a retry update error type and message
 			if (!isRetry) {
-				ImportUtils.handleFailure(baseTable, item, t, importDbHelper);
+				MergeUtils.handleFailure(baseTable, item, t, importDbHelper);
 			}
 			
 			return null;
@@ -65,7 +65,7 @@ public class RowProcessorHelper {
 		if ("users".equalsIgnoreCase(table.name())) {
 			boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
 			if (exists) {
-				ImportUtils.retireRecord(item, sinkDbHelper);
+				MergeUtils.retireRecord(item, sinkDbHelper);
 			}
 		}
 		
@@ -115,7 +115,7 @@ public class RowProcessorHelper {
 		String baseRefColName = fk.referencedColumn();
 		String effectiveRefTableName = fk.referencedTable();
 		String effectiveRefColName = fk.referencedColumn();
-		boolean isSubclassTable = ImportUtils.isSubclassTable(baseRefTableName);
+		boolean isSubclassTable = MergeUtils.isSubclassTable(baseRefTableName);
 		if (isSubclassTable) {
 			//For subclasses, the uuid is in the parent table
 			Table refTable = metadataExtractor.getTable(baseRefTableName);
@@ -155,7 +155,7 @@ public class RowProcessorHelper {
 					log.debug(msg);
 				}
 				
-				sinkValue = ImportUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
+				sinkValue = MergeUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
 				    metadataExtractor, sinkDbHelper);
 			} else {
 				if (log.isDebugEnabled()) {

@@ -22,7 +22,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ImportUtils {
+public class MergeUtils {
 	
 	private static Integer daemonUserId;
 	
@@ -255,7 +255,7 @@ public class ImportUtils {
 		//TODO Cache phantom row id for each table
 		final String refTableName = fk.referencedTable();
 		final String refColName = fk.referencedColumn();
-		boolean isSubclassTable = ImportUtils.isSubclassTable(refTableName);
+		boolean isSubclassTable = MergeUtils.isSubclassTable(refTableName);
 		Object phantomRowId;
 		ForeignKey parentFk = null;
 		String effectiveRefTableName = refTableName;
@@ -295,7 +295,7 @@ public class ImportUtils {
 		if (phantomRowId == null) {
 			//We don't want concurrent inserts of phantom row which would result in unique constraint violation on
 			//the uuid column
-			synchronized (ImportUtils.class) {
+			synchronized (MergeUtils.class) {
 				phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)",
 				    PHANTOM_UUID);
 				if (phantomRowId == null) {

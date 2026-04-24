@@ -105,7 +105,7 @@ public class StepFactory {
 		builder.name(tableName).dataSource(dataSource).selectClause("SELECT *").fromClause("FROM " + tableName)
 		        .sortKeys(sortKeys).pageSize(batchReadSize).rowMapper(ROW_MAPPER);
 		if (resumable) {
-			final Object maxProcessedRowId = ImportUtils.getMaxRowId(jobExplorer, jobRepository, tableName);
+			final Object maxProcessedRowId = MergeUtils.getMaxRowId(jobExplorer, jobRepository, tableName);
 			if (maxProcessedRowId != null) {
 				log.info("Importing rows from {} table with {} > {}", tableName, primaryKeys.get(0), maxProcessedRowId);
 				builder.whereClause(primaryKeys.get(0) + " > " + maxProcessedRowId);
@@ -185,7 +185,7 @@ public class StepFactory {
 		List<String> mergeTables = sourceExtractor.getTableNames().stream()
 		        .filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).collect(Collectors.toList());
 		log.info("Merging {} tables", mergeTables.size());
-		ImportUtils.setMergeTables(mergeTables);
+		MergeUtils.setMergeTables(mergeTables);
 		log.info("Verifying sink tables before merge");
 		mergeTables.forEach(t -> sinkExtractor.getTable(t));
 		if (tableWriterMap == null) {
@@ -194,7 +194,7 @@ public class StepFactory {
 		
 		mergeTables.forEach(t -> {
 			tableWriterMap.computeIfAbsent(t, k -> {
-				final String sql = ImportUtils.getWriteSql(sourceExtractor.getTable(k));
+				final String sql = MergeUtils.getWriteSql(sourceExtractor.getTable(k));
 				return createBatchWriter(sql, prepStmtParamSetter);
 			});
 		});

@@ -31,7 +31,7 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		final String rowId = (String) item.get("identifier");
 		final Table baseTable = metadataExtractor.getTable(baseTableName);
 		if (log.isDebugEnabled()) {
-			final String idLabel = ImportUtils.getIdentifierLabel(baseTable);
+			final String idLabel = MergeUtils.getIdentifierLabel(baseTable);
 			log.debug("Retrying row in table {} with {} = {}", baseTableName, idLabel, rowId);
 		}
 		
@@ -53,7 +53,7 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		Row row = helper.process(baseTable, rowData, true);
 		if (row == null) {
 			if (log.isDebugEnabled()) {
-				final String idLabel = ImportUtils.getIdentifierLabel(baseTable);
+				final String idLabel = MergeUtils.getIdentifierLabel(baseTable);
 				log.debug("Retry failed for row in table {} with {} = {} associated with retry with id {}", baseTableName,
 				    idLabel, rowId, id);
 			}

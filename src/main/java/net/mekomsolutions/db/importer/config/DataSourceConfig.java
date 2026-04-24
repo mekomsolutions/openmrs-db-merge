@@ -16,7 +16,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import liquibase.integration.spring.SpringLiquibase;
 import net.mekomsolutions.db.importer.Constants;
-import net.mekomsolutions.db.importer.ImportUtils;
+import net.mekomsolutions.db.importer.MergeUtils;
 
 public class DataSourceConfig {
 	
@@ -27,7 +27,7 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.sink")
 	public DataSource sinkDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
+		ds.setMaximumPoolSize(MergeUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	
@@ -45,7 +45,7 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.source")
 	public DataSource sourceDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
+		ds.setMaximumPoolSize(MergeUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	
@@ -58,7 +58,7 @@ public class DataSourceConfig {
 	@ConfigurationProperties(prefix = "spring.datasource.mgt")
 	public DataSource mgtDataSource() {
 		HikariDataSource ds = ((HikariDataSource) DataSourceBuilder.create().build());
-		ds.setMaximumPoolSize(ImportUtils.getMaxConnectionSize(maxSize));
+		ds.setMaximumPoolSize(MergeUtils.getMaxConnectionSize(maxSize));
 		return ds;
 	}
 	

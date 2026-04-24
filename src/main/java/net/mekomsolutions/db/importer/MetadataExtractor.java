@@ -86,10 +86,10 @@ public class MetadataExtractor {
 						        .toList();
 						Map<String, Column> nameColMap = columns.stream()
 						        .collect(Collectors.toMap(Column::name, col -> col));
-						boolean isSubclassTable = ImportUtils.isSubclassTable(tableName);
-						boolean isExtensionTable = ImportUtils.isExtensionTable(keys, columns);
-						boolean isMappingTable = ImportUtils.isMappingTable(keys, columns);
-						if (!ImportUtils.isExtensionTable(keys, columns) && !ImportUtils.isMappingTable(keys, columns)) {
+						boolean isSubclassTable = MergeUtils.isSubclassTable(tableName);
+						boolean isExtensionTable = MergeUtils.isExtensionTable(keys, columns);
+						boolean isMappingTable = MergeUtils.isMappingTable(keys, columns);
+						if (!MergeUtils.isExtensionTable(keys, columns) && !MergeUtils.isMappingTable(keys, columns)) {
 							if (keys.size() != 1) {
 								throw new RuntimeException(
 								        name + " table " + tableName + " has unsupported primary key count " + keys.size());

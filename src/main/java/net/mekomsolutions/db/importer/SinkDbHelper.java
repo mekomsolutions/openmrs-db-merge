@@ -121,7 +121,7 @@ public class SinkDbHelper {
 		String columns = String.join(",", columnNames);
 		String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
 		String sqlTemplate = "INSERT INTO %s (%s) VALUES (%s)";
-		boolean isSubclassTable = ImportUtils.isSubclassTable(tableName);
+		boolean isSubclassTable = MergeUtils.isSubclassTable(tableName);
 		Object parentRowId = null;
 		if (isSubclassTable) {
 			//Primary key values for subclass tables are not auto generated but instead FKs to the parent table, 
