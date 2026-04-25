@@ -180,7 +180,6 @@ public class MergeUtils {
 						log.debug(msg, colName, tableName);
 					}
 					
-					//TODO After the row is inserted, switch back to the self reference except for creator field.
 					value = getDaemonUserId(sinkDbHelper);
 				} else {
 					value = getPhantomRowId(colFk, tableName, metadataExtractor, sinkDbHelper);
