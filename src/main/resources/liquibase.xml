@@ -33,6 +33,8 @@
             </column>
             <column name="error_msg" type="VARCHAR(2048)"/>
         </createTable>
+        <addUniqueConstraint tableName="failed_import_item" columnNames="table_name,identifier"
+                             constraintName="failed_import_item_uk"/>
     </changeSet>
 
 </databaseChangeLog>

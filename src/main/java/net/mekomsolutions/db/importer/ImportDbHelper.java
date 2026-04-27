@@ -14,7 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ImportDbHelper {
 	
 	private static final String INSERT_FAILURE_SQL = "INSERT INTO " + FAILED_ITEM_TABLE
-	        + " (table_name,identifier,error_type,error_msg) VALUES (?,?,?,?)";
+            + " (table_name,identifier,error_type,error_msg) VALUES (?,?,?,?) AS r ON DUPLICATE KEY UPDATE " +
+            "error_type = r.error_type , error_msg = r.error_msg";
 	
 	protected JdbcTemplate jdbcTemplate;
 	
