@@ -63,6 +63,11 @@ public class RowProcessorHelper {
 	
 	private Row doProcess(Table table, Map<String, Object> item) {
 		if ("users".equalsIgnoreCase(table.name())) {
+			if (Constants.DAEMON_USER_UUID.equalsIgnoreCase(item.get("uuid").toString())) {
+				//Daemon user is not really a user account, skip it.
+				return null;
+			}
+			
 			boolean exists = sinkDbHelper.checkIfUserExists(item.get("username"), item.get("system_id"));
 			if (exists) {
 				MergeUtils.retireRecord(item, sinkDbHelper);
