@@ -13,10 +13,11 @@ import org.springframework.context.annotation.Import;
 
 import net.mekomsolutions.db.importer.config.AppConfig;
 import net.mekomsolutions.db.importer.config.BatchConfig;
+import net.mekomsolutions.db.importer.config.DaoConfig;
 import net.mekomsolutions.db.importer.config.DataSourceConfig;
 
 @SpringBootApplication
-@Import({ DataSourceConfig.class, AppConfig.class, BatchConfig.class })
+@Import({ DataSourceConfig.class, DaoConfig.class, AppConfig.class, BatchConfig.class })
 public class Launcher {
 	
 	public static void main(String[] args) {
