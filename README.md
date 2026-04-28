@@ -35,7 +35,17 @@ mvn clean install
 ## How To Run Application
 **NOTE** Before running, the application you **MUST** first add a unique constraint to the `uuid` column in the `users` 
 table in the destination database. And, you **MUST** also remove the constraint after the users tables is processed or 
-the entire merge has completed.
+the entire merge has completed. Below are the queries to add and remove the constraint.
+
+Add constraint
+```
+ALTER TABLE openmrs.users ADD UNIQUE INDEX uuid_uk (uuid ASC);
+```
+
+Remove constraint
+```
+ALTER TABLE openmrs.users DROP INDEX uuid_uk;
+```
 
 ```shell
 java -jar db-importer-{VERSION}.jar
