@@ -28,11 +28,11 @@ public class MergeUtils {
 	
 	private static List<String> mergeTables;
 	
-	protected static void setMergeTables(List<String> tables) {
+	public static void setMergeTables(List<String> tables) {
 		mergeTables = new ArrayList<>(tables);
 	}
 	
-	protected static String getWriteSql(Table table) {
+	public static String getWriteSql(Table table) {
 		final String tableName = table.name();
 		//Note that for many-to-many mapping tables with exactly 2 columns, the resulting query would be as below
 		//INSERT INTO table1 (col1,col2) VALUES (?,?) AS r ON DUPLICATE KEY UPDATE col1 = r.col1,col2 = r.col2
@@ -57,7 +57,7 @@ public class MergeUtils {
 		    placeholders, updateClause);
 	}
 	
-	protected static boolean isSubclassTable(String tableName) {
+	public static boolean isSubclassTable(String tableName) {
 		return Constants.SUBCLASS_TABLES.contains(tableName);
 	}
 	
@@ -77,8 +77,8 @@ public class MergeUtils {
 		return primaryKeys.size() == 2 && columns.size() == 2;
 	}
 	
-	protected static Object insertPlaceholderRow(String tableName, String referencedColumnName, Object uuid,
-	                                             MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
+	public static Object insertPlaceholderRow(String tableName, String referencedColumnName, Object uuid,
+	                                          MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
 		if (!mergeTables.contains(tableName)) {
 			throw new RuntimeException(
@@ -130,8 +130,8 @@ public class MergeUtils {
 	 * @param metadataExtractor {@link MetadataExtractor} instance
 	 * @param sinkDbHelper {@link SinkDbHelper} instance
 	 */
-	protected static void insertPlaceholderSubclassRow(String tableName, Object parentId,
-	                                                   MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
+	public static void insertPlaceholderSubclassRow(String tableName, Object parentId, MetadataExtractor metadataExtractor,
+	                                                SinkDbHelper sinkDbHelper) {
 		Table table = metadataExtractor.getTable(tableName);
 		List<Column> requiredColumns = getRequiredColumns(table);
 		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
@@ -203,7 +203,7 @@ public class MergeUtils {
 	 * @param tableName the name of the table for which the maximum row ID is being retrieved
 	 * @return the maximum processed row ID value for the specified table, or null if no value is found
 	 */
-	protected static Integer getMaxRowId(JobExplorer jobExplorer, JobRepository jobRepository, String tableName) {
+	public static Integer getMaxRowId(JobExplorer jobExplorer, JobRepository jobRepository, String tableName) {
 		//Traverse all past job instances starting with most recent to find the one where we saved a max row id value.
 		List<JobInstance> jobInstances = jobExplorer.getJobInstances(Constants.JOB_NAME, 0, Integer.MAX_VALUE);
 		for (JobInstance instance : jobInstances) {
@@ -216,8 +216,8 @@ public class MergeUtils {
 		return null;
 	}
 	
-	protected static void handleFailure(Table table, Map<String, Object> row, Throwable throwable,
-	                                    ImportDbHelper importDbHelper) {
+	public static void handleFailure(Table table, Map<String, Object> row, Throwable throwable,
+	                                 ImportDbHelper importDbHelper) {
 		
 		final String primaryKey = getIdentifier(table, row);
 		Throwable cause = ExceptionUtils.getRootCause(throwable);
@@ -360,7 +360,7 @@ public class MergeUtils {
 		return daemonUserId;
 	}
 	
-	protected static String getIdentifierLabel(Table table) {
+	public static String getIdentifierLabel(Table table) {
 		String label;
 		if (table.primaryKeys().size() == 1) {
 			label = table.primaryKeys().get(0);
@@ -389,7 +389,7 @@ public class MergeUtils {
 	 * @param item the record to be retired, represented as a map of key-value pairs
 	 * @param sinkDbHelper an instance of SinkDbHelper used to retrieve the daemon user ID
 	 */
-	protected static void retireRecord(Map<String, Object> item, SinkDbHelper sinkDbHelper) {
+	public static void retireRecord(Map<String, Object> item, SinkDbHelper sinkDbHelper) {
 		item.put("retired", true);
 		item.put("retired_by", getDaemonUserId(sinkDbHelper));
 		item.put("date_retired", LocalDateTime.now());

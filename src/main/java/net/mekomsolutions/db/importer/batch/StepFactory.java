@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
 
@@ -42,6 +42,13 @@ import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.MergeUtils;
+import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.Retry;
+import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.SourceDbHelper;
+import net.mekomsolutions.db.importer.Table;
 
 @Slf4j
 public class StepFactory {

@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.Constants.STEP_KEY_MAX_PROCESSED_ID;
 
@@ -14,6 +14,7 @@ import org.springframework.batch.core.scope.context.StepContext;
 import org.springframework.batch.item.Chunk;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Row;
 
 @Slf4j
 public class MaxRowIdRecorder {

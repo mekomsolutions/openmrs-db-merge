@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.MergeUtils.insertPlaceholderSubclassRow;
 
@@ -10,6 +10,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Column;
+import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.ForeignKey;
+import net.mekomsolutions.db.importer.ImportDbHelper;
+import net.mekomsolutions.db.importer.MergeUtils;
+import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.SinkDbHelper;
+import net.mekomsolutions.db.importer.SourceDbHelper;
+import net.mekomsolutions.db.importer.Table;
 
 @Slf4j
 @Component

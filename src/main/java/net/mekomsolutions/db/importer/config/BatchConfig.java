@@ -23,15 +23,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import net.mekomsolutions.db.importer.Constants;
-import net.mekomsolutions.db.importer.JobListener;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
-import net.mekomsolutions.db.importer.RetryRemover;
-import net.mekomsolutions.db.importer.RetryWriter;
-import net.mekomsolutions.db.importer.RowPreparedStatementParamSetter;
-import net.mekomsolutions.db.importer.RowProcessorHelper;
 import net.mekomsolutions.db.importer.SourceDbHelper;
-import net.mekomsolutions.db.importer.StepFactory;
+import net.mekomsolutions.db.importer.batch.JobListener;
+import net.mekomsolutions.db.importer.batch.RetryRemover;
+import net.mekomsolutions.db.importer.batch.RetryWriter;
+import net.mekomsolutions.db.importer.batch.RowPreparedStatementParamSetter;
+import net.mekomsolutions.db.importer.batch.RowProcessorHelper;
+import net.mekomsolutions.db.importer.batch.StepFactory;
 
 @EnableBatchProcessing(dataSourceRef = "mgtDataSource", transactionManagerRef = "mgtTxManager")
 public class BatchConfig {

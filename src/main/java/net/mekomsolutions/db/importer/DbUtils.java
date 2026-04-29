@@ -39,7 +39,7 @@ public class DbUtils {
 	 * @param sqlType the target SQL type to which the value should be converted
 	 * @return the converted object corresponding to the specified SQL type
 	 */
-	protected static Object convert(String value, int sqlType) {
+	public static Object convert(String value, int sqlType) {
 		Object result;
 		if (Types.VARCHAR == sqlType) {
 			result = value;

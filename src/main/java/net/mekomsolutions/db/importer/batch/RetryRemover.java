@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
 
@@ -17,6 +17,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Constants;
+import net.mekomsolutions.db.importer.Retry;
 
 /**
  * The RetryRemover class is responsible for deleting re-processed rows from the

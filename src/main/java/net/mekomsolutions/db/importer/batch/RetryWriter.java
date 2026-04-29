@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import static java.util.stream.Collectors.groupingBy;
 
@@ -11,6 +11,8 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Retry;
+import net.mekomsolutions.db.importer.Row;
 
 /**
  * RetryWriter is an implementation of ItemWriter responsible for writing the retry rows to the sink

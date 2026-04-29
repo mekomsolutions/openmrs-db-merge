@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -7,6 +7,8 @@ import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.stereotype.Component;
+
+import net.mekomsolutions.db.importer.Row;
 
 @Component
 public class RowPreparedStatementParamSetter implements ItemPreparedStatementSetter<Row> {

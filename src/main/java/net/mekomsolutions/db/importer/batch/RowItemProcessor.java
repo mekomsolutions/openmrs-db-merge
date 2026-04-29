@@ -1,10 +1,12 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import java.util.Map;
 
 import org.springframework.batch.item.adapter.ItemProcessorAdapter;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.Table;
 
 @Slf4j
 public class RowItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Row> {

@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.batch;
 
 import org.springframework.batch.core.annotation.AfterJob;
 import org.springframework.beans.factory.annotation.Qualifier;
