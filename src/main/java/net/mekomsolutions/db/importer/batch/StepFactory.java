@@ -3,9 +3,9 @@ package net.mekomsolutions.db.importer.batch;
 import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +36,6 @@ import org.springframework.batch.item.database.Order;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -56,7 +55,7 @@ public class StepFactory {
 	private final ColumnMapRowMapper ROW_MAPPER = new ColumnMapRowMapper();
 	
 	@Value("${tables.exclude.file.path}")
-	private Resource excludeTablesResource;
+	private File excludeTablesFile;
 	
 	@Value("${batch.read.size}")
 	private Integer batchReadSize;
@@ -180,15 +179,13 @@ public class StepFactory {
 	                           TaskExecutor executor)
 	    throws IOException {
 		
-		log.info("Retrieving exclude tables defined in file {}", excludeTablesResource.getDescription());
+		log.info("Retrieving exclude tables defined in file {}", excludeTablesFile);
 		
+		BufferedReader br = new BufferedReader(new FileReader(excludeTablesFile));
+		String line;
 		Set<String> excludes = new HashSet<>();
-		try (BufferedReader br = new BufferedReader(
-		        new InputStreamReader(excludeTablesResource.getInputStream(), StandardCharsets.UTF_8))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				excludes.add(line.trim().toLowerCase(Locale.ENGLISH));
-			}
+		while ((line = br.readLine()) != null) {
+			excludes.add(line.trim().toLowerCase(Locale.ENGLISH));
 		}
 		
 		//Skip excluded and empty tables
