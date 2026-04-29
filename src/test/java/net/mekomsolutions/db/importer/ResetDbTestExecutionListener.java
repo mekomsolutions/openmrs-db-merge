@@ -8,11 +8,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.support.AbstractTestExecutionListener;
 
@@ -35,12 +32,12 @@ public class ResetDbTestExecutionListener extends AbstractTestExecutionListener 
 	 */
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
-		ApplicationContext ctx = testContext.getApplicationContext();
+		/*ApplicationContext ctx = testContext.getApplicationContext();
 		DataSource dataSource = ctx.getBean(DataSource.class);
 		LOG.debug("Deleting all data from the test database");
 		try (Connection c = dataSource.getConnection()) {
 			deleteAllData(c);
-		}
+		}*/
 		
 	}
 	

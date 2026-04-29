@@ -7,23 +7,25 @@ import org.testcontainers.lifecycle.Startables;
 
 public class TestDatabase {
 	
-	public static final String TEST_USER = "test-user";
+	public static final String TEST_USER = "root";
 	
-	public static final String TEST_PASSWORD = "test-pass";
+	public static final String TEST_PASSWORD = "test";
 	
-	public static final String TEST_DB_NAME = "test-db";
+	public static final String MGT_DB_NAME = "mgt_db";
 	
 	public static final MySQLContainer MYSQL_CONTAINER = new MySQLContainer("mysql:8.2.0");
+	
+	public Integer getMysqlPort() {
+		return MYSQL_CONTAINER.getMappedPort(3306);
+	}
 	
 	public String getJdbcUrl() {
 		return MYSQL_CONTAINER.getJdbcUrl();
 	}
 	
 	public void start() {
-		MYSQL_CONTAINER.withDatabaseName(TEST_DB_NAME);
-		MYSQL_CONTAINER.withUsername(TEST_USER);
-		MYSQL_CONTAINER.withPassword(TEST_PASSWORD);
-		
+		MYSQL_CONTAINER.withDatabaseName(MGT_DB_NAME);
+		MYSQL_CONTAINER.withEnv("MYSQL_ROOT_PASSWORD", TEST_PASSWORD);
 		Startables.deepStart(Stream.of(MYSQL_CONTAINER)).join();
 	}
 	
