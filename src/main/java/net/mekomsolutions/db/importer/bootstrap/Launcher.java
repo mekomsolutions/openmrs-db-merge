@@ -16,7 +16,7 @@ import net.mekomsolutions.db.importer.config.BatchConfig;
 import net.mekomsolutions.db.importer.config.DaoConfig;
 import net.mekomsolutions.db.importer.config.DataSourceConfig;
 
-@SpringBootApplication(scanBasePackages = "net.mekomsolutions.db.importer")
+@SpringBootApplication
 @Import({ DataSourceConfig.class, DaoConfig.class, AppConfig.class, BatchConfig.class })
 public class Launcher {
 	
