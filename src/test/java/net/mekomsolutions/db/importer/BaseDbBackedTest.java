@@ -5,7 +5,7 @@ import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.SqlScriptsTestExecutionListener;
 
-import net.mekomsolutions.db.importer.config.BatchConfig;
+import net.mekomsolutions.db.importer.batch.BatchConfig;
 import net.mekomsolutions.db.importer.config.DaoConfig;
 
 /**

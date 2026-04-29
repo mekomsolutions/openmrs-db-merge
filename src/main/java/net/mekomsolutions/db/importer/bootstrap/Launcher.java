@@ -7,12 +7,17 @@
  */
 package net.mekomsolutions.db.importer.bootstrap;
 
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.job.SimpleJob;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
+import net.mekomsolutions.db.importer.StartupListener;
+import net.mekomsolutions.db.importer.batch.BatchConfig;
 import net.mekomsolutions.db.importer.config.AppConfig;
-import net.mekomsolutions.db.importer.config.BatchConfig;
 import net.mekomsolutions.db.importer.config.DaoConfig;
 import net.mekomsolutions.db.importer.config.DataSourceConfig;
 
@@ -22,6 +27,11 @@ public class Launcher {
 	
 	public static void main(String[] args) {
 		SpringApplication.run(Launcher.class, args);
+	}
+	
+	@Bean
+	public StartupListener startupListener(JobLauncher jobLauncher, Job job) {
+		return new StartupListener(jobLauncher, (SimpleJob) job);
 	}
 	
 }

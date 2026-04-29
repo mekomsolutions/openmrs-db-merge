@@ -13,13 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.Column;
 import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.ForeignKey;
-import net.mekomsolutions.db.importer.ImportDbHelper;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Row;
-import net.mekomsolutions.db.importer.SinkDbHelper;
-import net.mekomsolutions.db.importer.SourceDbHelper;
 import net.mekomsolutions.db.importer.Table;
+import net.mekomsolutions.db.importer.helpers.ImportDbHelper;
+import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
+import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 @Slf4j
 @Component

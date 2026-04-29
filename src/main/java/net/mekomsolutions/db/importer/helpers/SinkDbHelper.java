@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.helpers;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +16,9 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.MergeUtils;
+import net.mekomsolutions.db.importer.MetadataExtractor;
+import net.mekomsolutions.db.importer.Table;
 
 /**
  * Utility class for interacting with a sink database using a JDBC template.

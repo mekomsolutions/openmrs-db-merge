@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.helpers;
 
 import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
 

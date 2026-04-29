@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer.config;
+package net.mekomsolutions.db.importer.batch;
 
 import java.util.List;
 
@@ -17,6 +17,7 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -25,15 +26,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
-import net.mekomsolutions.db.importer.SourceDbHelper;
-import net.mekomsolutions.db.importer.batch.JobListener;
-import net.mekomsolutions.db.importer.batch.RetryRemover;
-import net.mekomsolutions.db.importer.batch.RetryWriter;
-import net.mekomsolutions.db.importer.batch.RowPreparedStatementParamSetter;
-import net.mekomsolutions.db.importer.batch.RowProcessorHelper;
-import net.mekomsolutions.db.importer.batch.StepFactory;
+import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 @EnableBatchProcessing(dataSourceRef = "mgtDataSource", transactionManagerRef = "mgtTxManager")
+@ComponentScan(basePackageClasses = BatchConfig.class)
 public class BatchConfig {
 	
 	@Bean

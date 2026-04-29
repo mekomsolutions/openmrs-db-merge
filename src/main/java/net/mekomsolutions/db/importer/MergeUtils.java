@@ -20,6 +20,8 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.helpers.ImportDbHelper;
+import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 
 @Slf4j
 public class MergeUtils {
@@ -65,7 +67,7 @@ public class MergeUtils {
 		return isExtensionTable(table.primaryKeys(), table.columns().values());
 	}
 	
-	protected static boolean isExtensionTable(List<String> primaryKeys, Collection<Column> columns) {
+	public static boolean isExtensionTable(List<String> primaryKeys, Collection<Column> columns) {
 		return primaryKeys.size() == 2 && columns.size() == 3;
 	}
 	
@@ -73,7 +75,7 @@ public class MergeUtils {
 		return isMappingTable(table.primaryKeys(), table.columns().values());
 	}
 	
-	protected static boolean isMappingTable(List<String> primaryKeys, Collection<Column> columns) {
+	public static boolean isMappingTable(List<String> primaryKeys, Collection<Column> columns) {
 		return primaryKeys.size() == 2 && columns.size() == 2;
 	}
 	

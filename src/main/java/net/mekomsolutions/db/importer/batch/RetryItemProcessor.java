@@ -13,8 +13,8 @@ import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Retry;
 import net.mekomsolutions.db.importer.Row;
-import net.mekomsolutions.db.importer.SourceDbHelper;
 import net.mekomsolutions.db.importer.Table;
+import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 @Slf4j
 public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>, Retry> {

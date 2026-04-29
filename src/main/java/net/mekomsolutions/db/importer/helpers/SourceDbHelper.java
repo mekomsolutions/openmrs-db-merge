@@ -1,4 +1,4 @@
-package net.mekomsolutions.db.importer;
+package net.mekomsolutions.db.importer.helpers;
 
 import java.util.List;
 import java.util.Map;
