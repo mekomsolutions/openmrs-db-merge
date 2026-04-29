@@ -17,7 +17,7 @@ import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Row;
 import net.mekomsolutions.db.importer.Table;
-import net.mekomsolutions.db.importer.helpers.ImportDbHelper;
+import net.mekomsolutions.db.importer.helpers.MgtDbHelper;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
@@ -31,14 +31,14 @@ public class RowProcessorHelper {
 	
 	private SinkDbHelper sinkDbHelper;
 	
-	private ImportDbHelper importDbHelper;
+	private MgtDbHelper mgtDbHelper;
 	
 	public RowProcessorHelper(@Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
-	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, ImportDbHelper importDbHelper) {
+	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, MgtDbHelper mgtDbHelper) {
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
-		this.importDbHelper = importDbHelper;
+		this.mgtDbHelper = mgtDbHelper;
 	}
 	
 	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) throws Exception {
@@ -61,7 +61,7 @@ public class RowProcessorHelper {
 			
 			//TODO Future for a retry update error type and message
 			if (!isRetry) {
-				MergeUtils.handleFailure(baseTable, item, t, importDbHelper);
+				MergeUtils.handleFailure(baseTable, item, t, mgtDbHelper);
 			}
 			
 			return null;

@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class ImportDbHelper {
+public class MgtDbHelper {
 	
 	private static final String INSERT_FAILURE_SQL = "INSERT INTO " + FAILED_ITEM_TABLE
 	        + " (table_name,identifier,error_type,error_msg) VALUES (?,?,?,?) AS r ON DUPLICATE KEY UPDATE "
@@ -19,7 +19,7 @@ public class ImportDbHelper {
 	
 	protected JdbcTemplate jdbcTemplate;
 	
-	public ImportDbHelper(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
+	public MgtDbHelper(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 	

@@ -20,7 +20,7 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.repository.JobRepository;
 
 import lombok.extern.slf4j.Slf4j;
-import net.mekomsolutions.db.importer.helpers.ImportDbHelper;
+import net.mekomsolutions.db.importer.helpers.MgtDbHelper;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 
 @Slf4j
@@ -218,8 +218,7 @@ public class MergeUtils {
 		return null;
 	}
 	
-	public static void handleFailure(Table table, Map<String, Object> row, Throwable throwable,
-	                                 ImportDbHelper importDbHelper) {
+	public static void handleFailure(Table table, Map<String, Object> row, Throwable throwable, MgtDbHelper mgtDbHelper) {
 		
 		final String primaryKey = getIdentifier(table, row);
 		Throwable cause = ExceptionUtils.getRootCause(throwable);
@@ -232,7 +231,7 @@ public class MergeUtils {
 			errMsg = errMsg.substring(0, ERROR_MSG_COLUMN_SIZE);
 		}
 		
-		importDbHelper.saveFailedItem(table.name(), primaryKey, cause.getClass().getName(), errMsg);
+		mgtDbHelper.saveFailedItem(table.name(), primaryKey, cause.getClass().getName(), errMsg);
 	}
 	
 	private static Integer getMaxRowId(JobRepository jobRepository, JobInstance jobInstance, String tableName) {
