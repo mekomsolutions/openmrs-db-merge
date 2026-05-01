@@ -8,7 +8,7 @@
 
     <changeSet id="2026-03-12-19-00" author="wluyima">
         <comment>Create spring batch metadata tables</comment>
-        <sqlFile path="classpath:org/springframework/batch/core/schema-mysql.sql"/>
+        <sqlFile path="classpath:org/springframework/batch/core/schema-mariadb.sql"/>
     </changeSet>
 
     <changeSet id="2026-04-07-19-00" author="wluyima">

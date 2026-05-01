@@ -202,7 +202,7 @@ public class MetadataExtractor {
 			log.debug("Fetching foreign keys for {} table: {}", name, table);
 		}
 		
-		//We use a set because of a bug in the MySQL driver where it returns duplicate FKs
+		//We use a set because of a bug in the driver where it returns duplicate FKs
 		Set<ForeignKey> foreignKeys = new HashSet<>();
 		try (ResultSet rs = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(),
 		    table)) {

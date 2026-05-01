@@ -37,7 +37,7 @@ public class MergeUtils {
 	public static String getWriteSql(Table table) {
 		final String tableName = table.name();
 		//Note that for many-to-many mapping tables with exactly 2 columns, the resulting query would be as below
-		//INSERT INTO table1 (col1,col2) VALUES (?,?) AS r ON DUPLICATE KEY UPDATE col1 = r.col1,col2 = r.col2
+		//INSERT INTO table1 (col1,col2) VALUES (?,?) ON DUPLICATE KEY UPDATE col1 = VALUES(col1),col2 = VALUES(col2)
 		//The query above actually would have no effect, the alternative would be to skip existing many-to-many table 
 		//rows in the RowItemProcessor but I'm guessing that would make the application slower
 		//TODO Future try it and compare the execution times
@@ -53,10 +53,10 @@ public class MergeUtils {
 		List<String> insertColumns = table.insertColumnNames();
 		String columns = String.join(",", insertColumns);
 		String placeholders = insertColumns.stream().map(c -> "?").collect(Collectors.joining(","));
-		String updateClause = insertColumns.stream().filter(c -> !uniqueColumns.contains(c)).map(c -> c + " = r." + c)
-		        .collect(Collectors.joining(","));
-		return String.format("INSERT INTO %s (%s) VALUES (%s) AS r ON DUPLICATE KEY UPDATE %s", tableName, columns,
-		    placeholders, updateClause);
+		String updateClause = insertColumns.stream().filter(c -> !uniqueColumns.contains(c))
+		        .map(c -> c + " = VALUES (" + c + ")").collect(Collectors.joining(","));
+		return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s", tableName, columns, placeholders,
+		    updateClause);
 	}
 	
 	public static boolean isSubclassTable(String tableName) {

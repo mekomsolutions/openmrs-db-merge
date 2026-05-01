@@ -131,9 +131,9 @@ public class SinkDbHelper {
 			//so we need to update the row if it already exists.
 			Table table = metadataExtractor.getTable(tableName);
 			final String pkColName = table.primaryKeys().get(0);
-			String updateCols = columnNames.stream().filter(c -> !c.equals(pkColName)).map(c -> c + " = r." + c)
+			String cols = columnNames.stream().filter(c -> !c.equals(pkColName)).map(c -> c + " = VALUES (" + c + ")")
 			        .collect(Collectors.joining(","));
-			sqlTemplate += " AS r ON DUPLICATE KEY UPDATE " + updateCols;
+			sqlTemplate += " ON DUPLICATE KEY UPDATE " + cols;
 			parentRowId = values[columnNames.indexOf(pkColName)];
 		}
 		
