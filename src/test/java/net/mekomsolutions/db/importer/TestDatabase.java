@@ -2,7 +2,7 @@ package net.mekomsolutions.db.importer;
 
 import java.util.stream.Stream;
 
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.lifecycle.Startables;
 
 public class TestDatabase {
@@ -13,24 +13,24 @@ public class TestDatabase {
 	
 	public static final String MGT_DB_NAME = "mgt_db";
 	
-	public static final MySQLContainer MYSQL_CONTAINER = new MySQLContainer("mysql:8.2.0");
+	public static final MariaDBContainer DB_CONTAINER = new MariaDBContainer("mariadb:10.3.39");
 	
 	public Integer getMysqlPort() {
-		return MYSQL_CONTAINER.getMappedPort(3306);
+		return DB_CONTAINER.getMappedPort(3306);
 	}
 	
 	public String getJdbcUrl() {
-		return MYSQL_CONTAINER.getJdbcUrl();
+		return DB_CONTAINER.getJdbcUrl();
 	}
 	
 	public void start() {
-		MYSQL_CONTAINER.withDatabaseName(MGT_DB_NAME);
-		MYSQL_CONTAINER.withEnv("MYSQL_ROOT_PASSWORD", TEST_PASSWORD);
-		Startables.deepStart(Stream.of(MYSQL_CONTAINER)).join();
+		DB_CONTAINER.withDatabaseName(MGT_DB_NAME);
+		DB_CONTAINER.withEnv("MARIADB_ROOT_PASSWORD", TEST_PASSWORD);
+		Startables.deepStart(Stream.of(DB_CONTAINER)).join();
 	}
 	
 	public void shutdown() {
-		MYSQL_CONTAINER.stop();
+		DB_CONTAINER.stop();
 	}
 	
 }
