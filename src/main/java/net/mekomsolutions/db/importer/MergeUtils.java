@@ -82,9 +82,10 @@ public class MergeUtils {
 	public static Object insertPlaceholderRow(String tableName, String referencedColumnName, Object uuid,
 	                                          MetadataExtractor metadataExtractor, SinkDbHelper sinkDbHelper) {
 		
-		if (!mergeTables.contains(tableName)) {
+		if (!mergeTables.contains(tableName) && uuid != null) {
+			//Null uuid implies we're adding a phantom row referenced by a placeholder row.
 			throw new RuntimeException(
-			        "Cannot reference placeholder row in table " + tableName + " that is not in the merge list");
+			        "Cannot add placeholder row in table " + tableName + " that is not in the merge list");
 		}
 		
 		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
@@ -246,11 +247,6 @@ public class MergeUtils {
 	
 	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
-		
-		if (!mergeTables.contains(fk.referencedTable())) {
-			throw new RuntimeException(
-			        "Cannot reference a phantom row in table " + fk.referencedTable() + " that is not in the merge list");
-		}
 		
 		//TODO Cache phantom row id for each table
 		final String refTableName = fk.referencedTable();

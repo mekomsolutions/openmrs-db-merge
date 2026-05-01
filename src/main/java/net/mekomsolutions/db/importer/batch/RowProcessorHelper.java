@@ -43,7 +43,7 @@ public class RowProcessorHelper {
 	
 	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) throws Exception {
 		String threadName = Thread.currentThread().getName();
-		final String threadNamePrefix = isRetry ? "retry:" : "import";
+		final String threadNamePrefix = (isRetry ? "retry" : "import") + ":";
 		try {
 			final String key = baseTable.primaryKeys().stream().map(k -> item.get(k).toString())
 			        .collect(Collectors.joining(","));
