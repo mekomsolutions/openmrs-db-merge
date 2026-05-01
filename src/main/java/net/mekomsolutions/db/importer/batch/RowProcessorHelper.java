@@ -125,7 +125,26 @@ public class RowProcessorHelper {
 		return values;
 	}
 	
-	private Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
+	/**
+	 * Resolves the foreign key value by retrieving the associated reference from the source table,
+	 * ensuring the required row exists in the sink table, and managing subclass table relationships if
+	 * applicable.
+	 * 
+	 * <pre>
+	 * This method is synchronized to ensure no concurrent inserts of placeholder rows take place to avoid race 
+	 * conditions, this would typically occur when 2 threads attempt to insert different rows but themselves or their 
+	 * associations reference common row(s) that are not yet merged which would result in unique constraint violations.
+	 * </pre>
+	 *
+	 * @param value The value to resolve as per the foreign key.
+	 * @param fk The foreign key object containing metadata about the foreign key relationship.
+	 * @param table The table where the foreign key is defined.
+	 * @return The resolved value that corresponds to the foreign key as it exists in the sink table.
+	 * @throws RuntimeException If the referenced row cannot be found in the source or sink table.
+	 */
+	private synchronized Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
+		//TODO Cache foreign key values which can be helpful for larger tables like Obs that may repeatedly reference 
+		//the same associated row e.g patient. Even users table is referenced by multiple columns in other tables.
 		String baseRefTableName = fk.referencedTable();
 		String baseRefColName = fk.referencedColumn();
 		String effectiveRefTableName = fk.referencedTable();
@@ -153,45 +172,37 @@ public class RowProcessorHelper {
 			throw new RuntimeException(msg);
 		}
 		
-		Object sinkValue;
-		//Synchronized block ensures no concurrent inserts of placeholders into a specific table to avoid
-		//race conditions and possibly deadlocks.
-		//TODO Future we should possibly allow concurrent inserts of different rows.
-		synchronized (fk) {
-			//TODO Cache foreign key values which can be helpful for larger tables like Obs that may
-			//repeatedly reference the same row
-			refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
-			sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "LOWER(uuid)", refUuid);
-			if (sinkValue == null) {
-				if (log.isDebugEnabled()) {
-					final String msg = String.format(
-					    "Preparing placeholder row to insert into sink table %s with uuid %s referenced by %s.%s",
-					    effectiveRefTableName, refUuid, table.name(), fk.columnName());
-					log.debug(msg);
-				}
-				
-				sinkValue = MergeUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
-				    metadataExtractor, sinkDbHelper);
-			} else {
-				if (log.isDebugEnabled()) {
-					log.debug("Found referenced row in sink table {} with uuid {}, its {} = {}", effectiveRefTableName,
-					    refUuid, effectiveRefColName, sinkValue);
-				}
-				
-				if (isSubclassTable) {
-					//For subclass table, insert subclass row if it does not exist
-					if (!sinkDbHelper.checkIfRowExists(baseRefTableName, baseRefColName, sinkValue)) {
-						if (log.isDebugEnabled()) {
-							log.debug("Preparing placeholder subclass row to insert into sink table {} for parent row "
-							        + "in table {} with uuid {}",
-							    baseRefTableName, effectiveRefTableName, refUuid);
-						}
-						
-						insertPlaceholderSubclassRow(baseRefTableName, sinkValue, metadataExtractor, sinkDbHelper);
-					} else if (log.isDebugEnabled()) {
-						log.debug("Subclass row exists in sink table {} for parent row in table {} with uuid {}",
+		refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
+		Object sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "LOWER(uuid)", refUuid);
+		if (sinkValue == null) {
+			if (log.isDebugEnabled()) {
+				final String msg = String.format(
+				    "Preparing placeholder row to insert into sink table %s with uuid %s referenced by %s.%s",
+				    effectiveRefTableName, refUuid, table.name(), fk.columnName());
+				log.debug(msg);
+			}
+			
+			sinkValue = MergeUtils.insertPlaceholderRow(fk.referencedTable(), fk.referencedColumn(), refUuid,
+			    metadataExtractor, sinkDbHelper);
+		} else {
+			if (log.isDebugEnabled()) {
+				log.debug("Found referenced row in sink table {} with uuid {}, its {} = {}", effectiveRefTableName, refUuid,
+				    effectiveRefColName, sinkValue);
+			}
+			
+			if (isSubclassTable) {
+				//For subclass table, insert subclass row if it does not exist
+				if (!sinkDbHelper.checkIfRowExists(baseRefTableName, baseRefColName, sinkValue)) {
+					if (log.isDebugEnabled()) {
+						log.debug("Preparing placeholder subclass row to insert into sink table {} for parent row "
+						        + "in table {} with uuid {}",
 						    baseRefTableName, effectiveRefTableName, refUuid);
 					}
+					
+					insertPlaceholderSubclassRow(baseRefTableName, sinkValue, metadataExtractor, sinkDbHelper);
+				} else if (log.isDebugEnabled()) {
+					log.debug("Subclass row exists in sink table {} for parent row in table {} with uuid {}",
+					    baseRefTableName, effectiveRefTableName, refUuid);
 				}
 			}
 		}
