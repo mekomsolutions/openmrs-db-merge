@@ -31,12 +31,7 @@ public class TestDataSourceConfig {
 	}
 	
 	private DataSource createDataSource(TestDatabase testDb, String dbName) {
-		String jdbcUrl = testDb.getJdbcUrl();
-		if (dbName != null) {
-			jdbcUrl = jdbcUrl.replace(TestDatabase.MGT_DB_NAME, dbName);
-		}
-		
-		jdbcUrl = jdbcUrl + "?useSSL=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true";
+		final String jdbcUrl = testDb.getJdbcUrl(dbName);
 		return DataSourceBuilder.create().url(jdbcUrl).username(TEST_USER).password(TEST_PASSWORD).build();
 	}
 	

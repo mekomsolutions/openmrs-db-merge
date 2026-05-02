@@ -1,7 +1,13 @@
 package net.mekomsolutions.db.importer;
 
+import static org.testcontainers.utility.MountableFile.forClasspathResource;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.stream.Stream;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.lifecycle.Startables;
 
@@ -13,24 +19,41 @@ public class TestDatabase {
 	
 	public static final String MGT_DB_NAME = "mgt_db";
 	
-	public static final MariaDBContainer DB_CONTAINER = new MariaDBContainer("mariadb:10.3.39");
+	public static final MariaDBContainer CONTAINER = new MariaDBContainer("mariadb:10.3.39");
 	
-	public Integer getMysqlPort() {
-		return DB_CONTAINER.getMappedPort(3306);
-	}
+	public static final String ENTRY_POINT_PATH = "/docker-entrypoint-initdb.d/";
 	
 	public String getJdbcUrl() {
-		return DB_CONTAINER.getJdbcUrl();
+		return CONTAINER.getJdbcUrl();
 	}
 	
-	public void start() {
-		DB_CONTAINER.withDatabaseName(MGT_DB_NAME);
-		DB_CONTAINER.withEnv("MARIADB_ROOT_PASSWORD", TEST_PASSWORD);
-		Startables.deepStart(Stream.of(DB_CONTAINER)).join();
+	public void start() throws Exception {
+		CONTAINER.withDatabaseName(MGT_DB_NAME);
+		CONTAINER.withEnv("MARIADB_ROOT_PASSWORD", TEST_PASSWORD);
+		CONTAINER.withCopyFileToContainer(forClasspathResource("create_dbs.sql"), ENTRY_POINT_PATH + "create_dbs.sql");
+		Startables.deepStart(Stream.of(CONTAINER)).join();
+		createSchema("sink_db");
+		createSchema("source_db");
+	}
+	
+	public String getJdbcUrl(String dbName) {
+		String jdbcUrl = getJdbcUrl();
+		if (dbName != null) {
+			jdbcUrl = jdbcUrl.replace(TestDatabase.MGT_DB_NAME, dbName);
+		}
+		
+		return jdbcUrl + "?useSSL=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true";
 	}
 	
 	public void shutdown() {
-		DB_CONTAINER.stop();
+		CONTAINER.stop();
+	}
+	
+	private void createSchema(String dbName) throws Exception {
+		try (Connection c = DriverManager.getConnection(getJdbcUrl(dbName), TEST_USER, TEST_PASSWORD)) {
+			ScriptUtils.executeSqlScript(c, new ClassPathResource("schema.sql"));
+		}
+		
 	}
 	
 }

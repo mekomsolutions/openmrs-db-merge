@@ -1,3 +1,5 @@
+SET FOREIGN_KEY_CHECKS=0;
+    
 CREATE TABLE `person` (
     `person_id` int NOT NULL AUTO_INCREMENT,
     `gender` varchar(50) DEFAULT '',
@@ -61,6 +63,14 @@ CREATE TABLE `users` (
     CONSTRAINT `user_who_retired_this_user` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `privilege` (
+    `privilege` varchar(255) NOT NULL,
+    `description` text,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`privilege`),
+    UNIQUE KEY `privilege_uuid_index` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
 CREATE TABLE `role` (
     `role` varchar(50) NOT NULL DEFAULT '',
     `description` varchar(255) DEFAULT NULL,
@@ -85,6 +95,85 @@ CREATE TABLE `user_property` (
     PRIMARY KEY (`user_id`,`property`),
     CONSTRAINT `user_property_to_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `concept_class` (
+    `concept_class_id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL DEFAULT '',
+    `description` varchar(255) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `changed_by` int DEFAULT NULL,
+    PRIMARY KEY (`concept_class_id`),
+    UNIQUE KEY `concept_class_uuid_index` (`uuid`),
+    KEY `concept_class_retired_status` (`retired`),
+    KEY `concept_class_creator` (`creator`),
+    KEY `user_who_retired_concept_class` (`retired_by`),
+    KEY `concept_class_name_index` (`name`),
+    KEY `concept_class_changed_by` (`changed_by`),
+    CONSTRAINT `concept_class_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `concept_class_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_retired_concept_class` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `concept_datatype` (
+    `concept_datatype_id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL DEFAULT '',
+    `hl7_abbreviation` varchar(3) DEFAULT NULL,
+    `description` varchar(255) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`concept_datatype_id`),
+    UNIQUE KEY `concept_datatype_uuid_index` (`uuid`),
+    KEY `concept_datatype_retired_status` (`retired`),
+    KEY `concept_datatype_creator` (`creator`),
+    KEY `user_who_retired_concept_datatype` (`retired_by`),
+    KEY `concept_datatype_name_index` (`name`),
+    CONSTRAINT `concept_datatype_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_retired_concept_datatype` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `concept` (
+    `concept_id` int NOT NULL AUTO_INCREMENT,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `short_name` varchar(255) DEFAULT NULL,
+    `description` text,
+    `form_text` text,
+    `datatype_id` int NOT NULL DEFAULT '0',
+    `class_id` int NOT NULL DEFAULT '0',
+    `is_set` tinyint(1) NOT NULL DEFAULT '0',
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `version` varchar(50) DEFAULT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`concept_id`),
+    UNIQUE KEY `concept_uuid_index` (`uuid`),
+    KEY `user_who_changed_concept` (`changed_by`),
+    KEY `concept_classes` (`class_id`),
+    KEY `concept_creator` (`creator`),
+    KEY `concept_datatypes` (`datatype_id`),
+    KEY `user_who_retired_concept` (`retired_by`),
+    CONSTRAINT `concept_classes` FOREIGN KEY (`class_id`) REFERENCES `concept_class` (`concept_class_id`),
+    CONSTRAINT `concept_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `concept_datatypes` FOREIGN KEY (`datatype_id`) REFERENCES `concept_datatype` (`concept_datatype_id`),
+    CONSTRAINT `user_who_changed_concept` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_retired_concept` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `patient` (
     `patient_id` int NOT NULL,
@@ -130,6 +219,55 @@ CREATE TABLE `visit_type` (
     CONSTRAINT `visit_type_retired_by` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `location` (
+    `location_id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL DEFAULT '',
+    `description` varchar(255) DEFAULT NULL,
+    `address1` varchar(255) DEFAULT NULL,
+    `address2` varchar(255) DEFAULT NULL,
+    `city_village` varchar(255) DEFAULT NULL,
+    `state_province` varchar(255) DEFAULT NULL,
+    `postal_code` varchar(50) DEFAULT NULL,
+    `country` varchar(50) DEFAULT NULL,
+    `latitude` varchar(50) DEFAULT NULL,
+    `longitude` varchar(50) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `county_district` varchar(255) DEFAULT NULL,
+    `address3` varchar(255) DEFAULT NULL,
+    `address4` varchar(255) DEFAULT NULL,
+    `address5` varchar(255) DEFAULT NULL,
+    `address6` varchar(255) DEFAULT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `parent_location` int DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `address7` varchar(255) DEFAULT NULL,
+    `address8` varchar(255) DEFAULT NULL,
+    `address9` varchar(255) DEFAULT NULL,
+    `address10` varchar(255) DEFAULT NULL,
+    `address11` varchar(255) DEFAULT NULL,
+    `address12` varchar(255) DEFAULT NULL,
+    `address13` varchar(255) DEFAULT NULL,
+    `address14` varchar(255) DEFAULT NULL,
+    `address15` varchar(255) DEFAULT NULL,
+    PRIMARY KEY (`location_id`),
+    UNIQUE KEY `location_uuid_index` (`uuid`),
+    KEY `name_of_location` (`name`),
+    KEY `location_retired_status` (`retired`),
+    KEY `user_who_created_location` (`creator`),
+    KEY `user_who_retired_location` (`retired_by`),
+    KEY `parent_location` (`parent_location`),
+    KEY `location_changed_by` (`changed_by`),
+    CONSTRAINT `location_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `parent_location` FOREIGN KEY (`parent_location`) REFERENCES `location` (`location_id`),
+    CONSTRAINT `user_who_created_location` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_retired_location` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `visit` (
     `visit_id` int NOT NULL AUTO_INCREMENT,
@@ -200,6 +338,40 @@ CREATE TABLE `encounter_type` (
     CONSTRAINT `user_who_retired_encounter_type` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `form` (
+    `form_id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL DEFAULT '',
+    `version` varchar(50) NOT NULL DEFAULT '',
+    `build` int DEFAULT NULL,
+    `published` tinyint(1) NOT NULL DEFAULT '0',
+    `xslt` text,
+    `template` text,
+    `description` text,
+    `encounter_type` int DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retired_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`form_id`),
+    UNIQUE KEY `form_uuid_index` (`uuid`),
+    KEY `form_published_index` (`published`),
+    KEY `form_retired_index` (`retired`),
+    KEY `form_published_and_retired_index` (`published`,`retired`),
+    KEY `user_who_last_changed_form` (`changed_by`),
+    KEY `user_who_created_form` (`creator`),
+    KEY `form_encounter_type` (`encounter_type`),
+    KEY `user_who_retired_form` (`retired_by`),
+    CONSTRAINT `form_encounter_type` FOREIGN KEY (`encounter_type`) REFERENCES `encounter_type` (`encounter_type_id`),
+    CONSTRAINT `user_who_created_form` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_last_changed_form` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `user_who_retired_form` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
 CREATE TABLE `encounter` (
     `encounter_id` int NOT NULL AUTO_INCREMENT,
     `encounter_type` int NOT NULL,
@@ -239,6 +411,4 @@ CREATE TABLE `encounter` (
                              CONSTRAINT `user_who_voided_encounter` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
-
-
-
+SET FOREIGN_KEY_CHECKS=1;
