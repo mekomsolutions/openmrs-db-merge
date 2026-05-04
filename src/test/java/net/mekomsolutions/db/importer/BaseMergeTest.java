@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.SqlConfig;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.batch.BatchConfig;
@@ -19,6 +20,8 @@ import net.mekomsolutions.db.importer.batch.BatchConfig;
 @TestPropertySource(properties = "batch.write.size=10")
 @ComponentScan(basePackages = { "net.mekomsolutions.db.importer.helpers" })
 @Slf4j
+@SqlConfig(dataSource = "sourceDataSource")
+@TestPropertySource(properties = "test.merge.tables=" + TestConstants.TEST_MERGE_TABLES)
 public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	@Autowired

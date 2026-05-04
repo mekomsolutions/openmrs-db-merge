@@ -43,4 +43,6 @@ public class Constants {
 	
 	public static final String PROP_MAX_CONN_POOL_SIZE = "connection.max.pool.size";
 	
+	public static final String PROP_TEST_MERGE_TABLES = "test.merge.tables";
+	
 }

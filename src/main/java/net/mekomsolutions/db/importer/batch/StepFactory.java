@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +66,9 @@ public class StepFactory {
 	
 	@Value("${" + Constants.PROP_RETRY_FAILED_ITEMS + ":false}")
 	private boolean retry;
+	
+	@Value("${" + Constants.PROP_TEST_MERGE_TABLES + ":}")
+	private String[] testTables;
 	
 	private JobExplorer jobExplorer;
 	
@@ -188,9 +192,15 @@ public class StepFactory {
 			excludes.add(line.trim().toLowerCase(Locale.ENGLISH));
 		}
 		
-		//Skip excluded and empty tables
-		List<String> mergeTables = sourceExtractor.getTableNames().stream()
-		        .filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).collect(Collectors.toList());
+		List<String> mergeTables;
+		if (testTables.length > 0) {
+			mergeTables = Arrays.asList(testTables);
+		} else {
+			//Skip excluded and empty tables
+			mergeTables = sourceExtractor.getTableNames().stream()
+			        .filter(t -> !excludes.contains(t) && !sourceDbHelper.isTableEmpty(t)).collect(Collectors.toList());
+		}
+		
 		log.info("Merging {} tables", mergeTables.size());
 		MergeUtils.setMergeTables(mergeTables);
 		log.info("Verifying sink tables before merge");

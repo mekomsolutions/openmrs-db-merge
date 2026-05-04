@@ -228,7 +228,7 @@ public class MergeUtils {
 		}
 		
 		String errMsg = cause.getMessage();
-		if (errMsg.length() > ERROR_MSG_COLUMN_SIZE) {
+		if (errMsg != null && errMsg.length() > ERROR_MSG_COLUMN_SIZE) {
 			errMsg = errMsg.substring(0, ERROR_MSG_COLUMN_SIZE);
 		}
 		
