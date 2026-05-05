@@ -1,5 +1,6 @@
 package net.mekomsolutions.db.importer.helpers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -192,8 +193,17 @@ public class SinkDbHelper {
 		try {
 			final String usernameLower = username == null ? null : username.toString().toLowerCase();
 			final String systemIdLower = systemId.toString().toLowerCase();
-			SqlParameterSource params = new MapSqlParameterSource(USER_UNIQUE_COLUMNS,
-			        List.of(usernameLower, systemIdLower));
+			List<String> values;
+			if (usernameLower != null) {
+				//Admin user has no username by default
+				values = List.of(usernameLower, systemIdLower);
+			} else {
+				values = new ArrayList<>();
+				values.add(null);
+				values.add(systemIdLower);
+			}
+			
+			SqlParameterSource params = new MapSqlParameterSource(USER_UNIQUE_COLUMNS, values);
 			return namedParamJdbcTemplate.queryForObject(USER_EXISTS_QUERY, params, Integer.class) > 0;
 		}
 		catch (Exception e) {
