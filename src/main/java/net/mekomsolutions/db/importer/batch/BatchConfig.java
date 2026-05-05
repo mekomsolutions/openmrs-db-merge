@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -97,6 +98,7 @@ public class BatchConfig {
 	}
 	
 	@Bean
+	@DependsOn("springLiquibase")
 	public StepFactory stepFactory(JobRepository jobRepo, JobExplorer jobExplorer,
 	                               @Qualifier("sinkTxManager") PlatformTransactionManager sinkTxManager,
 	                               @Qualifier("sourceDataSource") DataSource sourceDataSource,
