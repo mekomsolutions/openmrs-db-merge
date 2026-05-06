@@ -34,6 +34,8 @@ public class TestDatabase {
 		Startables.deepStart(Stream.of(CONTAINER)).join();
 		createSchema("sink_db");
 		createSchema("source_db");
+		runScript("sink_db", "initial_sink.sql");
+		runScript("source_db", "initial_source.sql");
 	}
 	
 	public String getJdbcUrl(String dbName) {
@@ -50,8 +52,12 @@ public class TestDatabase {
 	}
 	
 	private void createSchema(String dbName) throws Exception {
+		runScript(dbName, "schema.sql");
+	}
+	
+	private void runScript(String dbName, String fileName) throws Exception {
 		try (Connection c = DriverManager.getConnection(getJdbcUrl(dbName), TEST_USER, TEST_PASSWORD)) {
-			ScriptUtils.executeSqlScript(c, new ClassPathResource("schema.sql"));
+			ScriptUtils.executeSqlScript(c, new ClassPathResource(fileName));
 		}
 		
 	}
