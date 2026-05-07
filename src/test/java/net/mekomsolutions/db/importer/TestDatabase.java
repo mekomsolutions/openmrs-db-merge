@@ -36,6 +36,8 @@ public class TestDatabase {
 		createSchema("source_db");
 		runScript("sink_db", "initial_sink.sql");
 		runScript("source_db", "initial_source.sql");
+		runScript("sink_db", "metadata.sql");
+		runScript("source_db", "metadata.sql");
 	}
 	
 	public String getJdbcUrl(String dbName) {
