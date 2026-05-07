@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 
+import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
+
 public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_PERSON = "select * from person where person_id > 1 and uuid != '"
@@ -34,6 +36,39 @@ public class MergeTest extends BaseMergeTest {
 	@Autowired
 	@Qualifier("sinkJdbcTemplate")
 	private JdbcTemplate sinkJdbcTemplate;
+	
+	@Autowired
+	private SourceDbHelper sinkDbHelper;
+	
+	@Autowired
+	@Qualifier("sourceExtractor")
+	private MetadataExtractor extractor;
+	
+	private void assertRow(Map<String, Object> expected, Map<String, Object> actual, Table table) {
+		Assertions.assertEquals(expected.size(), actual.size(), "Column size mismatch");
+		for (Map.Entry<String, Object> e : expected.entrySet()) {
+			if (e.getKey().equalsIgnoreCase(table.primaryKeys().get(0))) {
+				continue;
+			} else if (table.getColumn(e.getKey()).foreignKey() != null) {
+				//Compare uuids of reference columns
+				continue;
+			}
+			
+			Assertions.assertEquals(e.getValue(), actual.get(e.getKey()), "Mismatch for column: " + e.getKey());
+		}
+		
+	}
+	
+	private void verifyRow(Map<String, Object> row, Table table) {
+		final String uuid = (String) row.get("uuid");
+		Map<String, Object> sourceRow = sinkDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
+		assertRow(sourceRow, row, table);
+	}
+	
+	private void verifyRows(List<Map<String, Object>> rows, String tableName) {
+		Table table = extractor.getTable(tableName);
+		rows.forEach(row -> verifyRow(row, table));
+	}
 	
 	@Test
 	@Sql({ "classpath:users.sql", "classpath:patient.sql", "classpath:visit.sql", "classpath:encounter.sql" })
@@ -64,7 +99,11 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, patients.size());
 		Assertions.assertEquals(5, visits.size());
 		Assertions.assertEquals(5, encounters.size());
-		//TODO Compare sink row values with those from the source
+		verifyRows(persons, "person");
+		//verifyRows(users, "users");
+		//verifyRows(patients, "patient");
+		verifyRows(visits, "visit");
+		verifyRows(encounters, "encounter");
 	}
 	
 }
