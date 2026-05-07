@@ -25,6 +25,8 @@ public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_VISIT = "select * from visit where patient_id in (" + PATIENT_SUB_QUERY + ")";
 	
+	private static final String QUERY_ENC = "select * from encounter where patient_id in (" + PATIENT_SUB_QUERY + ")";
+	
 	@Autowired
 	@Qualifier("sourceJdbcTemplate")
 	private JdbcTemplate sourceJdbcTemplate;
@@ -41,10 +43,12 @@ public class MergeTest extends BaseMergeTest {
 		List<Map<String, Object>> users = sinkJdbcTemplate.queryForList("select * from users where user_id > 2");
 		List<Map<String, Object>> patients = sinkJdbcTemplate.queryForList("select * from patient");
 		List<Map<String, Object>> visits = sinkJdbcTemplate.queryForList("select * from visit");
+		List<Map<String, Object>> encounters = sinkJdbcTemplate.queryForList("select * from encounter");
 		Assertions.assertTrue(persons.isEmpty());
 		Assertions.assertTrue(users.isEmpty());
 		Assertions.assertTrue(patients.isEmpty());
 		Assertions.assertTrue(visits.isEmpty());
+		Assertions.assertTrue(encounters.isEmpty());
 		
 		executeJob();
 		
@@ -52,12 +56,14 @@ public class MergeTest extends BaseMergeTest {
 		users = sinkJdbcTemplate.queryForList(QUERY_USER);
 		patients = sinkJdbcTemplate.queryForList(QUERY_PATIENT);
 		visits = sinkJdbcTemplate.queryForList(QUERY_VISIT);
+		encounters = sinkJdbcTemplate.queryForList(QUERY_ENC);
 		//All source DB persons including the row associated to admin and daemon
 		Assertions.assertEquals(11, persons.size());
 		//All source DB users including admin, excludes daemon
 		Assertions.assertEquals(6, users.size());
 		Assertions.assertEquals(5, patients.size());
 		Assertions.assertEquals(5, visits.size());
+		Assertions.assertEquals(5, encounters.size());
 		//TODO Compare sink row values with those from the source
 	}
 	
