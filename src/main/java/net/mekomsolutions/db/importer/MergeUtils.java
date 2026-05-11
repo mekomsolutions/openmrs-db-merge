@@ -343,7 +343,7 @@ public class MergeUtils {
 		        && ("creator".equals(colName) || "changed_by".equals(colName) || "retired_by".equals(colName));
 	}
 	
-	private static Integer getDaemonUserId(SinkDbHelper sinkDbHelper) {
+	public static Integer getDaemonUserId(SinkDbHelper sinkDbHelper) {
 		if (daemonUserId != null) {
 			return daemonUserId;
 		}

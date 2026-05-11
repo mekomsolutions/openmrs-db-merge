@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
 
+import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 public class MergeTest extends BaseMergeTest {
@@ -38,7 +39,10 @@ public class MergeTest extends BaseMergeTest {
 	private JdbcTemplate sinkJdbcTemplate;
 	
 	@Autowired
-	private SourceDbHelper sinkDbHelper;
+	private SourceDbHelper sourceDbHelper;
+	
+	@Autowired
+	private SinkDbHelper sinkDbHelper;
 	
 	@Autowired
 	@Qualifier("sourceExtractor")
@@ -47,21 +51,39 @@ public class MergeTest extends BaseMergeTest {
 	private void assertRow(Map<String, Object> expected, Map<String, Object> actual, Table table) {
 		Assertions.assertEquals(expected.size(), actual.size(), "Column size mismatch");
 		for (Map.Entry<String, Object> e : expected.entrySet()) {
-			if (e.getKey().equalsIgnoreCase(table.primaryKeys().get(0))) {
+			final String pkCol = table.primaryKeys().get(0);
+			Object id = actual.get(pkCol);
+			if (e.getKey().equalsIgnoreCase(pkCol)) {
 				continue;
 			} else if (table.getColumn(e.getKey()).foreignKey() != null) {
-				//Compare uuids of reference columns
+				//TODO Compare uuids of reference columns
 				continue;
 			}
 			
-			Assertions.assertEquals(e.getValue(), actual.get(e.getKey()), "Mismatch for column: " + e.getKey());
+			Object expectedValue = e.getValue();
+			if (table.name().equalsIgnoreCase("users") && expected.get(pkCol) == Integer.valueOf(1)) {
+				if (e.getKey().equalsIgnoreCase("retired")) {
+					expectedValue = true;
+				} else if (e.getKey().equalsIgnoreCase("retired_by")) {
+					expectedValue = MergeUtils.getDaemonUserId(sinkDbHelper);
+				} else if (e.getKey().equalsIgnoreCase("retire_reason")) {
+					expectedValue = Constants.RETIRE_REASON;
+				} else if (e.getKey().equalsIgnoreCase("date_retired")) {
+					Assertions.assertNotNull(actual.get(e.getKey()), "Date retired is not set for retired admin user");
+					continue;
+				}
+			}
+			
+			final String msg = "Incorrect value for column: " + e.getKey() + " for row with " + pkCol + ": " + id
+			        + " in table: " + table.name();
+			Assertions.assertEquals(expectedValue, actual.get(e.getKey()), msg);
 		}
 		
 	}
 	
 	private void verifyRow(Map<String, Object> row, Table table) {
 		final String uuid = (String) row.get("uuid");
-		Map<String, Object> sourceRow = sinkDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
+		Map<String, Object> sourceRow = sourceDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
 		assertRow(sourceRow, row, table);
 	}
 	
@@ -100,7 +122,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, visits.size());
 		Assertions.assertEquals(5, encounters.size());
 		verifyRows(persons, "person");
-		//verifyRows(users, "users");
+		verifyRows(users, "users");
 		//verifyRows(patients, "patient");
 		verifyRows(visits, "visit");
 		verifyRows(encounters, "encounter");
