@@ -1,5 +1,7 @@
 package net.mekomsolutions.db.importer;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +32,8 @@ public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_ENC = "select * from encounter where patient_id in (" + PATIENT_SUB_QUERY + ")";
 	
+	private static final Timestamp TIMESTAMP = Timestamp.valueOf(LocalDateTime.now());
+	
 	@Autowired
 	@Qualifier("sourceJdbcTemplate")
 	private JdbcTemplate sourceJdbcTemplate;
@@ -48,35 +52,42 @@ public class MergeTest extends BaseMergeTest {
 	@Qualifier("sourceExtractor")
 	private MetadataExtractor extractor;
 	
-	private void assertRow(Map<String, Object> expected, Map<String, Object> actual, Table table) {
-		Assertions.assertEquals(expected.size(), actual.size(), "Column size mismatch");
-		for (Map.Entry<String, Object> e : expected.entrySet()) {
+	private void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
+		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
+		for (Map.Entry<String, Object> e : sourceRow.entrySet()) {
+			final String col = e.getKey();
 			final String pkCol = table.primaryKeys().get(0);
-			Object id = actual.get(pkCol);
+			Object sinkId = sinkRow.get(pkCol);
+			Object sourceValue = e.getValue();
+			Object sinkValue = sinkRow.get(col);
 			if (e.getKey().equalsIgnoreCase(pkCol)) {
 				continue;
-			} else if (table.getColumn(e.getKey()).foreignKey() != null) {
-				//TODO Compare uuids of reference columns
-				continue;
+			} else if (sourceValue != null && table.getColumn(col).foreignKey() != null) {
+				//Database ids will be different so instead compare uuids of the referenced rows.
+				ForeignKey fk = table.getColumn(col).foreignKey();
+				sourceValue = sourceDbHelper.getUuid(fk.referencedTable(), fk.referencedColumn(), sourceRow.get(col));
+				sinkValue = sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
+				    sinkRow.get(col));
 			}
 			
-			Object expectedValue = e.getValue();
-			if (table.name().equalsIgnoreCase("users") && expected.get(pkCol) == Integer.valueOf(1)) {
-				if (e.getKey().equalsIgnoreCase("retired")) {
-					expectedValue = true;
-				} else if (e.getKey().equalsIgnoreCase("retired_by")) {
-					expectedValue = MergeUtils.getDaemonUserId(sinkDbHelper);
-				} else if (e.getKey().equalsIgnoreCase("retire_reason")) {
-					expectedValue = Constants.RETIRE_REASON;
-				} else if (e.getKey().equalsIgnoreCase("date_retired")) {
-					Assertions.assertNotNull(actual.get(e.getKey()), "Date retired is not set for retired admin user");
+			if (table.name().equalsIgnoreCase("users") && sourceRow.get(pkCol) == Integer.valueOf(1)) {
+				if (col.equalsIgnoreCase("retired")) {
+					sourceValue = true;
+				} else if (col.equalsIgnoreCase("retired_by")) {
+					sourceValue = MergeUtils.getDaemonUserId(sinkDbHelper);
+				} else if (col.equalsIgnoreCase("retire_reason")) {
+					sourceValue = Constants.RETIRE_REASON;
+				} else if (col.equalsIgnoreCase("date_retired")) {
+					Timestamp dateRetired = (Timestamp) sinkValue;
+					Assertions.assertTrue(dateRetired.after(TIMESTAMP),
+					    "Date retired in sink users table for merged admin user should be set to current timestamp");
 					continue;
 				}
 			}
 			
-			final String msg = "Incorrect value for column: " + e.getKey() + " for row with " + pkCol + ": " + id
-			        + " in table: " + table.name();
-			Assertions.assertEquals(expectedValue, actual.get(e.getKey()), msg);
+			final String msg = "Incorrect value for column: " + col + " for row with " + pkCol + ": " + sinkId
+			        + " in sink table: " + table.name();
+			Assertions.assertEquals(sourceValue, sinkValue, msg);
 		}
 		
 	}
