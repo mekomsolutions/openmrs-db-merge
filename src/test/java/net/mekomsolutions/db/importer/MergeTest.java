@@ -81,10 +81,24 @@ public class MergeTest extends BaseMergeTest {
 		
 	}
 	
-	private void verifyRow(Map<String, Object> row, Table table) {
-		final String uuid = (String) row.get("uuid");
-		Map<String, Object> sourceRow = sourceDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
-		assertRow(sourceRow, row, table);
+	private void verifyRow(Map<String, Object> sinkRow, Table table) {
+		final String uuid = (String) sinkRow.get("uuid");
+		Map<String, Object> sourceRow;
+		if (!MergeUtils.isSubclassTable(table.name())) {
+			sourceRow = sourceDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
+		} else {
+			final String pkCol = table.primaryKeys().get(0);
+			ForeignKey fk = table.getColumn(pkCol).foreignKey();
+			Table refTable = extractor.getTable(fk.referencedTable());
+			String rowUuid = (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
+			    sinkRow.get(pkCol));
+			Map<String, Object> sourceParentRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
+			    new Object[] { rowUuid });
+			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol),
+			    new Object[] { sourceParentRow.get(refTable.primaryKeys().get(0)) });
+		}
+		
+		assertRow(sourceRow, sinkRow, table);
 	}
 	
 	private void verifyRows(List<Map<String, Object>> rows, String tableName) {
@@ -123,7 +137,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, encounters.size());
 		verifyRows(persons, "person");
 		verifyRows(users, "users");
-		//verifyRows(patients, "patient");
+		verifyRows(patients, "patient");
 		verifyRows(visits, "visit");
 		verifyRows(encounters, "encounter");
 	}
