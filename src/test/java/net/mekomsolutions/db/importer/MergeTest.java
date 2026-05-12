@@ -65,6 +65,11 @@ public class MergeTest extends BaseMergeTest {
 			} else if (sourceValue != null && table.getColumn(col).foreignKey() != null) {
 				//Database ids will be different so instead compare uuids of the referenced rows.
 				ForeignKey fk = table.getColumn(col).foreignKey();
+				if (MergeUtils.isSubclassTable(fk.referencedTable())) {
+					Table refTable = extractor.getTable(fk.referencedTable());
+					//Uuid is in the parent table, so use the foreign from subclass row to parent row be
+					fk = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey();
+				}
 				sourceValue = sourceDbHelper.getUuid(fk.referencedTable(), fk.referencedColumn(), sourceRow.get(col));
 				sinkValue = sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
 				    sinkRow.get(col));
