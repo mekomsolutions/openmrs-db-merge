@@ -16,33 +16,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Slf4j
-public class SourceDbHelper {
+public class SourceDbHelper extends BaseDbHelper {
 	
 	protected JdbcTemplate jdbcTemplate;
 	
 	public SourceDbHelper(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
-	}
-	
-	/**
-	 * Checks if the specified table is empty.
-	 *
-	 * @param table the name of the database table to check
-	 * @return true if the table is empty, false otherwise
-	 */
-	public boolean isTableEmpty(String table) {
-		if (log.isDebugEnabled()) {
-			log.debug("Checking if source table {} is empty", table);
-		}
-		
-		String query = String.format("SELECT COUNT(*) FROM %s", table);
-		try {
-			return jdbcTemplate.queryForObject(query, Integer.class) == 0;
-		}
-		catch (Exception e) {
-			String msg = "Failed to check if source table " + table + " is empty";
-			throw new RuntimeException(msg, e);
-		}
+		super("source", jdbcTemplate);
 	}
 	
 	/**
