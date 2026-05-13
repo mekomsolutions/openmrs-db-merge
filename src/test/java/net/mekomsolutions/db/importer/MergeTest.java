@@ -1,19 +1,11 @@
 package net.mekomsolutions.db.importer;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.jdbc.Sql;
-
-import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
-import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 public class MergeTest extends BaseMergeTest {
 	
@@ -33,71 +25,6 @@ public class MergeTest extends BaseMergeTest {
 	private static final String QUERY_ENC = "select * from encounter where patient_id in (" + PATIENT_SUB_QUERY + ")";
 	
 	private static final String QUERY_USER_PROPS = "select * from user_property";
-	
-	private static final Timestamp TIMESTAMP = Timestamp.valueOf(LocalDateTime.now());
-	
-	@Autowired
-	@Qualifier("sourceJdbcTemplate")
-	private JdbcTemplate sourceJdbcTemplate;
-	
-	@Autowired
-	@Qualifier("sinkJdbcTemplate")
-	private JdbcTemplate sinkJdbcTemplate;
-	
-	@Autowired
-	private SourceDbHelper sourceDbHelper;
-	
-	@Autowired
-	private SinkDbHelper sinkDbHelper;
-	
-	@Autowired
-	@Qualifier("sourceExtractor")
-	private MetadataExtractor extractor;
-	
-	private void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
-		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
-		for (Map.Entry<String, Object> e : sourceRow.entrySet()) {
-			final String col = e.getKey();
-			final String pkCol = table.primaryKeys().get(0);
-			Object sinkId = sinkRow.get(pkCol);
-			Object sourceValue = e.getValue();
-			Object sinkValue = sinkRow.get(col);
-			if (e.getKey().equalsIgnoreCase(pkCol)) {
-				continue;
-			} else if (sourceValue != null && table.getColumn(col).foreignKey() != null) {
-				//Database ids will be different so instead compare uuids of the referenced rows.
-				ForeignKey fk = table.getColumn(col).foreignKey();
-				if (MergeUtils.isSubclassTable(fk.referencedTable())) {
-					Table refTable = extractor.getTable(fk.referencedTable());
-					//Uuid is in the parent table, so use the foreign from subclass row to parent row be
-					fk = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey();
-				}
-				sourceValue = sourceDbHelper.getUuid(fk.referencedTable(), fk.referencedColumn(), sourceRow.get(col));
-				sinkValue = sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
-				    sinkRow.get(col));
-			}
-			
-			if (table.name().equalsIgnoreCase("users") && sourceRow.get(pkCol) == Integer.valueOf(1)) {
-				if (col.equalsIgnoreCase("retired")) {
-					sourceValue = true;
-				} else if (col.equalsIgnoreCase("retired_by")) {
-					sourceValue = MergeUtils.getDaemonUserId(sinkDbHelper);
-				} else if (col.equalsIgnoreCase("retire_reason")) {
-					sourceValue = Constants.RETIRE_REASON;
-				} else if (col.equalsIgnoreCase("date_retired")) {
-					Timestamp dateRetired = (Timestamp) sinkValue;
-					Assertions.assertTrue(dateRetired.after(TIMESTAMP),
-					    "Date retired in sink users table for merged admin user should be set to current timestamp");
-					continue;
-				}
-			}
-			
-			final String msg = "Incorrect value for column: " + col + " for row with " + pkCol + ": " + sinkId
-			        + " in sink table: " + table.name();
-			Assertions.assertEquals(sourceValue, sinkValue, msg);
-		}
-		
-	}
 	
 	private void verifyRow(Map<String, Object> sinkRow, Table table) {
 		final String uuid = (String) sinkRow.get("uuid");

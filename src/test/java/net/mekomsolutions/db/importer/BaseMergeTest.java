@@ -1,18 +1,25 @@
 package net.mekomsolutions.db.importer;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Map;
 
+import org.junit.jupiter.api.Assertions;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.SqlConfig;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.batch.BatchConfig;
+import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
+import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
 @Import(BatchConfig.class)
 @TestPropertySource(properties = "tables.exclude.file.path=classpath:exclude_tables.txt")
@@ -24,11 +31,27 @@ import net.mekomsolutions.db.importer.batch.BatchConfig;
 @TestPropertySource(properties = "test.merge.tables=" + TestConstants.TEST_MERGE_TABLES)
 public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
+	private static final Timestamp TIMESTAMP = Timestamp.valueOf(LocalDateTime.now());
+	
 	@Autowired
 	private JobLauncher jobLauncher;
 	
 	@Autowired
 	private SimpleJob job;
+	
+	@Autowired
+	@Qualifier("sinkJdbcTemplate")
+	protected JdbcTemplate sinkJdbcTemplate;
+	
+	@Autowired
+	protected SourceDbHelper sourceDbHelper;
+	
+	@Autowired
+	protected SinkDbHelper sinkDbHelper;
+	
+	@Autowired
+	@Qualifier("sourceExtractor")
+	protected MetadataExtractor extractor;
 	
 	protected void executeJob() throws Exception {
 		if (job.getStepNames().isEmpty()) {
@@ -39,6 +62,51 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 		log.info("Starting the job to import {} tables", job.getStepNames());
 		JobParametersBuilder builder = new JobParametersBuilder().addLocalDateTime("timestamp", LocalDateTime.now());
 		jobLauncher.run(job, builder.toJobParameters());
+	}
+	
+	protected void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
+		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
+		for (Map.Entry<String, Object> e : sourceRow.entrySet()) {
+			final String col = e.getKey();
+			final String pkCol = table.primaryKeys().get(0);
+			Object sinkId = sinkRow.get(pkCol);
+			Object sourceValue = e.getValue();
+			Object sinkValue = sinkRow.get(col);
+			if (e.getKey().equalsIgnoreCase(pkCol)) {
+				continue;
+			} else if (sourceValue != null && table.getColumn(col).foreignKey() != null) {
+				//Database ids will be different so instead compare uuids of the referenced rows.
+				ForeignKey fk = table.getColumn(col).foreignKey();
+				if (MergeUtils.isSubclassTable(fk.referencedTable())) {
+					Table refTable = extractor.getTable(fk.referencedTable());
+					//Uuid is in the parent table, so use the foreign from subclass row to parent row be
+					fk = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey();
+				}
+				sourceValue = sourceDbHelper.getUuid(fk.referencedTable(), fk.referencedColumn(), sourceRow.get(col));
+				sinkValue = sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
+				    sinkRow.get(col));
+			}
+			
+			if (table.name().equalsIgnoreCase("users") && sourceRow.get(pkCol) == Integer.valueOf(1)) {
+				if (col.equalsIgnoreCase("retired")) {
+					sourceValue = true;
+				} else if (col.equalsIgnoreCase("retired_by")) {
+					sourceValue = MergeUtils.getDaemonUserId(sinkDbHelper);
+				} else if (col.equalsIgnoreCase("retire_reason")) {
+					sourceValue = Constants.RETIRE_REASON;
+				} else if (col.equalsIgnoreCase("date_retired")) {
+					Timestamp dateRetired = (Timestamp) sinkValue;
+					Assertions.assertTrue(dateRetired.after(TIMESTAMP),
+					    "Date retired in sink users table for merged admin user should be set to current timestamp");
+					continue;
+				}
+			}
+			
+			final String msg = "Incorrect value for column: " + col + " for row with " + pkCol + ": " + sinkId
+			        + " in sink table: " + table.name();
+			Assertions.assertEquals(sourceValue, sinkValue, msg);
+		}
+		
 	}
 	
 }
