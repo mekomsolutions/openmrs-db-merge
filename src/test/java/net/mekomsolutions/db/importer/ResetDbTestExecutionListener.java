@@ -23,10 +23,6 @@ public class ResetDbTestExecutionListener extends AbstractTestExecutionListener 
 	
 	private static final String DELETE = "DELETE FROM ";
 	
-	private static final String DISABLE_KEYS = "SET FOREIGN_KEY_CHECKS=0";
-	
-	private static final String ENABLE_KEYS = "SET FOREIGN_KEY_CHECKS=1";
-	
 	/**
 	 * @see AbstractTestExecutionListener#afterTestMethod(TestContext)
 	 */
@@ -50,14 +46,14 @@ public class ResetDbTestExecutionListener extends AbstractTestExecutionListener 
 		List<String> tables = getTableNames(connection);
 		Statement statement = connection.createStatement();
 		try {
-			statement.execute(DISABLE_KEYS);
+			statement.execute(Constants.DISABLE_KEYS);
 			for (String tableName : tables) {
 				statement.executeUpdate(DELETE + tableName);
 			}
 		}
 		finally {
 			if (statement != null) {
-				statement.execute(ENABLE_KEYS);
+				statement.execute(Constants.ENABLE_KEYS);
 				statement.close();
 			}
 		}
