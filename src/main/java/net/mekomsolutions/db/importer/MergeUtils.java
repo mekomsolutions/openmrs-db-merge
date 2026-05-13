@@ -63,7 +63,7 @@ public class MergeUtils {
 		return Constants.SUBCLASS_TABLES.contains(tableName);
 	}
 	
-	protected static boolean isExtensionTable(Table table) {
+	public static boolean isExtensionTable(Table table) {
 		return isExtensionTable(table.primaryKeys(), table.columns().values());
 	}
 	
@@ -71,7 +71,7 @@ public class MergeUtils {
 		return primaryKeys.size() == 2 && columns.size() == 3;
 	}
 	
-	protected static boolean isMappingTable(Table table) {
+	public static boolean isMappingTable(Table table) {
 		return isMappingTable(table.primaryKeys(), table.columns().values());
 	}
 	

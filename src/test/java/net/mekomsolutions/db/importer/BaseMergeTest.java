@@ -82,6 +82,7 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 			Object sourceValue = e.getValue();
 			Object sinkValue = sinkRow.get(col);
 			if (e.getKey().equalsIgnoreCase(pkCol)) {
+				//We don't expect database ids to be the same
 				continue;
 			} else if (sourceValue != null && table.getColumn(col).foreignKey() != null) {
 				//Database ids will be different so instead compare uuids of the referenced rows.

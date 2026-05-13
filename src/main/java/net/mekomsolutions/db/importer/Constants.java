@@ -45,4 +45,10 @@ public class Constants {
 	
 	public static final String PROP_TEST_MERGE_TABLES = "test.merge.tables";
 	
+	public static final String DISABLE_KEYS = "SET FOREIGN_KEY_CHECKS=0";
+	
+	public static final String ENABLE_KEYS = "SET FOREIGN_KEY_CHECKS=1";
+	
+	public static final List<String> TABLES_WITHOUT_AUTO_INCREMENT = List.of("privilege", "role");
+	
 }

@@ -11,16 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class MgtDbHelper {
+public class MgtDbHelper extends BaseDbHelper {
 	
 	private static final String INSERT_FAILURE_SQL = "INSERT INTO " + FAILED_ITEM_TABLE
 	        + " (table_name,identifier,error_type,error_msg) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE "
 	        + "error_type = VALUES(error_type) , error_msg = VALUES(error_msg)";
 	
-	protected JdbcTemplate jdbcTemplate;
-	
 	public MgtDbHelper(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
+		super("mgt", jdbcTemplate);
 	}
 	
 	/**

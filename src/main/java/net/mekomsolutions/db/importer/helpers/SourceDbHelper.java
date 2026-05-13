@@ -18,8 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SourceDbHelper extends BaseDbHelper {
 	
-	protected JdbcTemplate jdbcTemplate;
-	
 	public SourceDbHelper(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
 		super("source", jdbcTemplate);
 	}

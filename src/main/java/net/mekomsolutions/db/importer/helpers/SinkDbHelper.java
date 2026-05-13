@@ -1,5 +1,7 @@
 package net.mekomsolutions.db.importer.helpers;
 
+import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +19,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Table;
@@ -234,6 +237,51 @@ public class SinkDbHelper {
 			final String msg = String.format("Failed to check existence of a row in table %s where %s = %s", tableName,
 			    columnName, columnValue);
 			throw new RuntimeException(msg, e);
+		}
+	}
+	
+	/**
+	 * Deletes the phantom row from each table.
+	 */
+	public void deletePhantomRows() {
+		if (log.isDebugEnabled()) {
+			log.debug("Deleting all phantom rows from all tables");
+		}
+		
+		try {
+			jdbcTemplate.execute(Constants.DISABLE_KEYS);
+			for (String tableName : metadataExtractor.getTableNames()) {
+				//Tables with non auto incrementing primary key, calling metadataExtractor.getTable will fail 
+				if (!Constants.TABLES_WITHOUT_AUTO_INCREMENT.contains(tableName)) {
+					Table table = metadataExtractor.getTable(tableName);
+					if (MergeUtils.isSubclassTable(tableName) || MergeUtils.isExtensionTable(table)
+					        || MergeUtils.isMappingTable(table)) {
+						continue;
+					}
+				}
+				
+				try {
+					final String query = "DELETE FROM " + tableName + " WHERE uuid = '" + PHANTOM_UUID + "'";
+					int deletes = jdbcTemplate.update(query);
+					if (log.isTraceEnabled()) {
+						log.trace("Deleted {} phantom rows from table {}", deletes, tableName);
+					}
+				}
+				catch (Exception e) {
+					final String msg = String.format("Failed to delete phantom row from table %s", tableName);
+					throw new RuntimeException(msg, e);
+				}
+			}
+		}
+		finally {
+			try {
+				jdbcTemplate.execute(Constants.ENABLE_KEYS);
+			}
+			catch (Throwable e) {
+				final String msg = "Failed to enable foreign key checks in the sink database, please be sure to "
+				        + "re-enabled them manually in the database";
+				log.error(msg, e);
+			}
 		}
 	}
 }
