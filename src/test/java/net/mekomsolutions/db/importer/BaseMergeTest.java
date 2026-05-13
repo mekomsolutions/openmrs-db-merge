@@ -2,6 +2,7 @@ package net.mekomsolutions.db.importer;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
@@ -64,9 +65,21 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 		jobLauncher.run(job, builder.toJobParameters());
 	}
 	
-	protected String getUuidInSinkDb(Object id, ForeignKey fk) {
-		return (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(), id);
+	protected Object getSourceReferencedRowId(Object sinkRowId, String primaryKeyColumn, ForeignKey fk) {
+		//Get the database id of the referenced row in the source DB
+		final Object rowUuid = getUuidInSinkDb(sinkRowId, fk);
+		Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
+		    new Object[] { rowUuid });
+		return refSourceRow.get(primaryKeyColumn);
 	}
+	
+	/*protected Object getSourceReferenceRowId(Object sinkRowId, ForeignKey fk) {
+		//Get the database id of the referenced row in the source DB
+		final Object rowUuid = getUuidInSinkDb(sinkRowId, fk);
+		Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
+		    new Object[] { rowUuid });
+		return refSourceRow.get(fk.columnName());
+	}*/
 	
 	protected void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
 		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
@@ -110,6 +123,10 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 			        + " in sink table: " + table.name();
 			Assertions.assertEquals(sourceValue, sinkValue, msg);
 		}
+	}
+	
+	private String getUuidInSinkDb(Object id, ForeignKey fk) {
+		return (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(), id);
 	}
 	
 }

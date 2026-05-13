@@ -33,24 +33,16 @@ public class MergeTest extends BaseMergeTest {
 		if (MergeUtils.isSubclassTable(table.name())) {
 			final String pkCol = table.primaryKeys().get(0);
 			ForeignKey fk = table.getColumn(pkCol).foreignKey();
-			Table refTable = extractor.getTable(fk.referencedTable());
-			String rowUuid = (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(),
-			    sinkRow.get(pkCol));
-			Map<String, Object> sourceParentRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
-			    new Object[] { rowUuid });
-			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol),
-			    new Object[] { sourceParentRow.get(refTable.primaryKeys().get(0)) });
+			final String parentPkCol = extractor.getTable(fk.referencedTable()).primaryKeys().get(0);
+			Object sourceParentRowId = getSourceReferencedRowId(sinkRow.get(pkCol), parentPkCol, fk);
+			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol), new Object[] { sourceParentRowId });
 		} else if (MergeUtils.isExtensionTable(table)) {
 			List<Object> values = new ArrayList<>(table.primaryKeys().size());
 			for (String col : table.primaryKeys()) {
 				Object value = sinkRow.get(col);
 				ForeignKey fk = table.getColumn(col).foreignKey();
 				if (fk != null) {
-					//Get the database id of the referenced row in the source DB
-					final Object rowUuid = getUuidInSinkDb(value, fk);
-					Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
-					    new Object[] { rowUuid });
-					value = refSourceRow.get(col);
+					value = getSourceReferencedRowId(value, col, fk);
 				}
 				values.add(value);
 			}
