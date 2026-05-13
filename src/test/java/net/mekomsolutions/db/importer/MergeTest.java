@@ -1,5 +1,6 @@
 package net.mekomsolutions.db.importer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +40,21 @@ public class MergeTest extends BaseMergeTest {
 			    new Object[] { rowUuid });
 			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol),
 			    new Object[] { sourceParentRow.get(refTable.primaryKeys().get(0)) });
+		} else if (MergeUtils.isExtensionTable(table)) {
+			List<Object> values = new ArrayList<>(table.primaryKeys().size());
+			for (String col : table.primaryKeys()) {
+				Object value = sinkRow.get(col);
+				ForeignKey fk = table.getColumn(col).foreignKey();
+				if (fk != null) {
+					//Get the database id of the referenced row in the source DB
+					final Object rowUuid = getUuidInSinkDb(value, fk);
+					Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
+					    new Object[] { rowUuid });
+					value = refSourceRow.get(col);
+				}
+				values.add(value);
+			}
+			sourceRow = sourceDbHelper.getRow(table.name(), table.primaryKeys(), values.toArray());
 		} else {
 			sourceRow = sourceDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
 		}

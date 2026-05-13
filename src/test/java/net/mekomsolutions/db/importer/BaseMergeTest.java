@@ -64,6 +64,10 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 		jobLauncher.run(job, builder.toJobParameters());
 	}
 	
+	protected String getUuidInSinkDb(Object id, ForeignKey fk) {
+		return (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(), id);
+	}
+	
 	protected void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
 		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
 		for (Map.Entry<String, Object> e : sourceRow.entrySet()) {
@@ -106,7 +110,6 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 			        + " in sink table: " + table.name();
 			Assertions.assertEquals(sourceValue, sinkValue, msg);
 		}
-		
 	}
 	
 }
