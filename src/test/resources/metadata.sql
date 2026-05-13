@@ -19,3 +19,10 @@ VALUES (1,'Consultation', 1,'2026-01-01 00:00:00',0,'346015d7-496b-11f1-b548-024
 INSERT INTO form (form_id,name,version,published,creator,date_created,retired,uuid)
 VALUES (1,'Triage','v1',1, 1,'2026-01-01 00:00:00',0,'318015d7-496b-11f1-b548-0242ac140002');
 
+INSERT INTO role (role,uuid)
+VALUES ('Doctor','156015d7-496b-11f1-b548-0242ac140003'),
+       ('Nurse','256015d7-496b-11f1-b548-0242ac140003'),
+       ('Registration Clerk','356015d7-496b-11f1-b548-0242ac140003'),
+       ('Data Clerk','456015d7-496b-11f1-b548-0242ac140003'),
+       ('Pharmacist','556015d7-496b-11f1-b548-0242ac140003');
+

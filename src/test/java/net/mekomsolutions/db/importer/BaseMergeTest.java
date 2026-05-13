@@ -67,19 +67,11 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	protected Object getSourceReferencedRowId(Object sinkRowId, String primaryKeyColumn, ForeignKey fk) {
 		//Get the database id of the referenced row in the source DB
-		final Object rowUuid = getUuidInSinkDb(sinkRowId, fk);
+		final Object uuid = sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(), sinkRowId);
 		Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
-		    new Object[] { rowUuid });
+		    new Object[] { uuid });
 		return refSourceRow.get(primaryKeyColumn);
 	}
-	
-	/*protected Object getSourceReferenceRowId(Object sinkRowId, ForeignKey fk) {
-		//Get the database id of the referenced row in the source DB
-		final Object rowUuid = getUuidInSinkDb(sinkRowId, fk);
-		Map<String, Object> refSourceRow = sourceDbHelper.getRow(fk.referencedTable(), List.of("uuid"),
-		    new Object[] { rowUuid });
-		return refSourceRow.get(fk.columnName());
-	}*/
 	
 	protected void assertRow(Map<String, Object> sourceRow, Map<String, Object> sinkRow, Table table) {
 		Assertions.assertEquals(sourceRow.size(), sinkRow.size(), "Column size mismatch");
@@ -123,10 +115,6 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 			        + " in sink table: " + table.name();
 			Assertions.assertEquals(sourceValue, sinkValue, msg);
 		}
-	}
-	
-	private String getUuidInSinkDb(Object id, ForeignKey fk) {
-		return (String) sinkDbHelper.getColumnValue(fk.referencedTable(), "uuid", fk.referencedColumn(), id);
 	}
 	
 }
