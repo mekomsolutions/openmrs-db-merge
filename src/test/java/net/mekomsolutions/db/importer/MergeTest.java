@@ -10,14 +10,11 @@ import org.springframework.test.context.jdbc.Sql;
 
 public class MergeTest extends BaseMergeTest {
 	
-	private static final String QUERY_PERSON = "select * from person where person_id > 1 and uuid != '"
-	        + Constants.PHANTOM_UUID + "'";
+	private static final String QUERY_PERSON = "select * from person where person_id > 1";
 	
-	private static final String QUERY_USER = "select * from users where user_id > 2 and uuid != '" + Constants.PHANTOM_UUID
-	        + "'";
+	private static final String QUERY_USER = "select * from users where user_id > 2";
 	
-	private static final String PATIENT_SUB_QUERY = "select person_id from person where person_id != 1 and uuid != '"
-	        + Constants.PHANTOM_UUID + "'";
+	private static final String PATIENT_SUB_QUERY = "select person_id from person where person_id != 1";
 	
 	private static final String QUERY_PATIENT = "select * from patient where patient_id in (" + PATIENT_SUB_QUERY + ")";
 	
