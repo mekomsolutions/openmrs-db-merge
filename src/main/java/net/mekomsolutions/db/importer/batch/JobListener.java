@@ -50,7 +50,12 @@ public class JobListener {
 	
 	private void cleanUp() {
 		log.info("Cleaning up tables to remove any phantom rows");
-		sinkDbHelper.deletePhantomRows();
+		try {
+			sinkDbHelper.deletePhantomRows();
+		}
+		catch (Throwable t) {
+			log.error("Error occurred while cleaning up tables", t);
+		}
 	}
 	
 }
