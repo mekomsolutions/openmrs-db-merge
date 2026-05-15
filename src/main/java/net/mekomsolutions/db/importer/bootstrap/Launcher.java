@@ -8,7 +8,7 @@
 package net.mekomsolutions.db.importer.bootstrap;
 
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.job.SimpleJob;
+import org.springframework.batch.core.job.AbstractJob;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -31,7 +31,7 @@ public class Launcher {
 	
 	@Bean
 	public StartupListener startupListener(JobLauncher jobLauncher, Job job) {
-		return new StartupListener(jobLauncher, (SimpleJob) job);
+		return new StartupListener(jobLauncher, (AbstractJob) job);
 	}
 	
 }

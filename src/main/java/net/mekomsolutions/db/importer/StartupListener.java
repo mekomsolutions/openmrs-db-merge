@@ -3,7 +3,7 @@ package net.mekomsolutions.db.importer;
 import java.time.LocalDateTime;
 
 import org.springframework.batch.core.JobParametersBuilder;
-import org.springframework.batch.core.job.SimpleJob;
+import org.springframework.batch.core.job.AbstractJob;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -15,9 +15,9 @@ public class StartupListener {
 	
 	private JobLauncher jobLauncher;
 	
-	private SimpleJob job;
+	private AbstractJob job;
 	
-	public StartupListener(JobLauncher jobLauncher, SimpleJob job) {
+	public StartupListener(JobLauncher jobLauncher, AbstractJob job) {
 		this.jobLauncher = jobLauncher;
 		this.job = job;
 	}
