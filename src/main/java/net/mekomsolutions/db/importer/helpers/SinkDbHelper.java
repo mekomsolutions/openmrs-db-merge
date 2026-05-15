@@ -165,7 +165,7 @@ public class SinkDbHelper {
 			}
 			
 			if (insertCount != 1) {
-				throw new RuntimeException("Invalid insert count " + insertCount);
+				throw new RuntimeException("Invalid insert count " + insertCount + " into table " + tableName);
 			}
 			
 			if (log.isTraceEnabled()) {

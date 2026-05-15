@@ -40,7 +40,7 @@ public class MgtDbHelper extends BaseDbHelper {
 			final Object[] args = new Object[] { tableName, primaryKey, errorType, errorMessage };
 			int insertCount = jdbcTemplate.update(pscFactory.newPreparedStatementCreator(args));
 			if (insertCount != 1) {
-				throw new RuntimeException("Invalid insert count " + insertCount);
+				throw new RuntimeException("Invalid insert count " + insertCount + " into table " + tableName);
 			}
 			
 			if (log.isTraceEnabled()) {
