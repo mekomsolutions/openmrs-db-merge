@@ -37,7 +37,7 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		final Integer id = (Integer) item.get("id");
 		final String baseTableName = (String) item.get("table_name");
 		final String rowId = (String) item.get("identifier");
-		final Table baseTable = metadataExtractor.getTable(baseTableName);
+		final Table baseTable = metadataExtractor.getTable(baseTableName, false);
 		if (log.isDebugEnabled()) {
 			final String idLabel = MergeUtils.getIdentifierLabel(baseTable);
 			log.debug("Retrying row in table {} with {} = {}", baseTableName, idLabel, rowId);

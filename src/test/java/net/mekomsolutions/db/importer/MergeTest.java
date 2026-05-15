@@ -32,7 +32,7 @@ public class MergeTest extends BaseMergeTest {
 		if (MergeUtils.isSubclassTable(table.name())) {
 			final String pkCol = table.primaryKeys().get(0);
 			ForeignKey fk = table.getColumn(pkCol).foreignKey();
-			final String parentPkCol = extractor.getTable(fk.referencedTable()).primaryKeys().get(0);
+			final String parentPkCol = extractor.getTable(fk.referencedTable(), false).primaryKeys().get(0);
 			Object sourceParentRowId = getSourceReferencedRowId(sinkRow.get(pkCol), parentPkCol, fk);
 			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol), new Object[] { sourceParentRowId });
 		} else if (MergeUtils.isExtensionTable(table) || MergeUtils.isMappingTable(table)) {
@@ -54,7 +54,7 @@ public class MergeTest extends BaseMergeTest {
 	}
 	
 	private void verifyRows(List<Map<String, Object>> rows, String tableName) {
-		Table table = extractor.getTable(tableName);
+		Table table = extractor.getTable(tableName, false);
 		rows.forEach(row -> verifyRow(row, table));
 	}
 	

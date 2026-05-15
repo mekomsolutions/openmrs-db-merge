@@ -65,10 +65,12 @@ public class MetadataExtractor {
 	 * Gets metadata information for a table and creates a Table object containing the information.
 	 *
 	 * @param tableName The name of the table to fetch metadata for.
+	 * @param ignoreBadTables when set to true, an exception won't be thrown for tables that have an
+	 *            unsupported structure.
 	 * @return A Table object containing the metadata of the specified table.
 	 * @throws SQLException if a database access error occurs.
 	 */
-	public Table getTable(String tableName) {
+	public Table getTable(String tableName, boolean ignoreBadTables) {
 		if (!NAME_AND_TABLE_CACHE.containsKey(tableName)) {
 			//We want exactly one instance of the Table object because  
 			//we will need to synchronize on some of its properties.
@@ -89,14 +91,15 @@ public class MetadataExtractor {
 						boolean isSubclassTable = MergeUtils.isSubclassTable(tableName);
 						boolean isExtensionTable = MergeUtils.isExtensionTable(keys, columns);
 						boolean isMappingTable = MergeUtils.isMappingTable(keys, columns);
-						if (!MergeUtils.isExtensionTable(keys, columns) && !MergeUtils.isMappingTable(keys, columns)) {
+						if (!MergeUtils.isExtensionTable(keys, columns) && !MergeUtils.isMappingTable(keys, columns)
+						        && !ignoreBadTables) {
 							if (keys.size() != 1) {
 								throw new RuntimeException(
 								        name + " table " + tableName + " has unsupported primary key count " + keys.size());
 							}
 						}
 						
-						if (!isSubclassTable && !isExtensionTable && !isMappingTable) {
+						if (!isSubclassTable && !isExtensionTable && !isMappingTable && !ignoreBadTables) {
 							Column uuidColum = nameColMap.get("uuid");
 							if (uuidColum == null) {
 								//TODO Future Add support for these tables
@@ -109,7 +112,7 @@ public class MetadataExtractor {
 							}
 						}
 						
-						if (!isSubclassTable && keys.size() == 1) {
+						if (!isSubclassTable && keys.size() == 1 && !ignoreBadTables) {
 							String keyColumnName = keys.get(0);
 							if (!nameColMap.get(keyColumnName).autoIncrement()) {
 								throw new RuntimeException(

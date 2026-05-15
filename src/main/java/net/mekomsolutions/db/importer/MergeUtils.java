@@ -90,7 +90,7 @@ public class MergeUtils {
 		
 		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
 		//placeholder row
-		Table refTable = metadataExtractor.getTable(tableName);
+		Table refTable = metadataExtractor.getTable(tableName, false);
 		List<Column> requiredColumns = getRequiredColumns(refTable);
 		Object parentId = null;
 		boolean isSubclassTable = isSubclassTable(tableName);
@@ -99,7 +99,7 @@ public class MergeUtils {
 			//TODO This code is actually duplicated from RowProcessorHelper, may set it on the Table object
 			ForeignKey parentFk = refTable.getColumn(referencedColumnName).foreignKey();
 			String parentTableName = parentFk.referencedTable();
-			Table parentTable = metadataExtractor.getTable(parentTableName);
+			Table parentTable = metadataExtractor.getTable(parentTableName, false);
 			List<Column> parentRequiredColumns = getRequiredColumns(parentTable);
 			if (log.isDebugEnabled()) {
 				log.debug("Preparing parent placeholder row to insert into sink table {} with uuid {} for subclass "
@@ -135,7 +135,7 @@ public class MergeUtils {
 	 */
 	public static void insertPlaceholderSubclassRow(String tableName, Object parentId, MetadataExtractor metadataExtractor,
 	                                                SinkDbHelper sinkDbHelper) {
-		Table table = metadataExtractor.getTable(tableName);
+		Table table = metadataExtractor.getTable(tableName, false);
 		List<Column> requiredColumns = getRequiredColumns(table);
 		List<String> columnNames = new ArrayList<>(requiredColumns.stream().map(Column::name).toList());
 		columnNames.add(table.primaryKeys().get(0));
@@ -257,7 +257,7 @@ public class MergeUtils {
 		String effectiveRefTableName = refTableName;
 		String effectiveRefColName = refColName;
 		if (isSubclassTable) {
-			Table refTable = metadataExtractor.getTable(refTableName);
+			Table refTable = metadataExtractor.getTable(refTableName, false);
 			parentFk = refTable.getColumn(refColName).foreignKey();
 			effectiveRefTableName = parentFk.referencedTable();
 			effectiveRefColName = parentFk.referencedColumn();

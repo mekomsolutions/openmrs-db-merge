@@ -133,7 +133,7 @@ public class SinkDbHelper {
 		if (isSubclassTable) {
 			//Primary key values for subclass tables are not auto generated but instead FKs to the parent table, 
 			//so we need to update the row if it already exists.
-			Table table = metadataExtractor.getTable(tableName);
+			Table table = metadataExtractor.getTable(tableName, false);
 			final String pkColName = table.primaryKeys().get(0);
 			String cols = columnNames.stream().filter(c -> !c.equals(pkColName)).map(c -> c + " = VALUES (" + c + ")")
 			        .collect(Collectors.joining(","));
@@ -253,9 +253,8 @@ public class SinkDbHelper {
 			for (String tableName : metadataExtractor.getTableNames()) {
 				//Tables with non auto incrementing primary key, calling metadataExtractor.getTable will fail 
 				if (!Constants.TABLES_WITHOUT_AUTO_INCREMENT.contains(tableName)) {
-					Table table = metadataExtractor.getTable(tableName);
-					if (MergeUtils.isSubclassTable(tableName) || MergeUtils.isExtensionTable(table)
-					        || MergeUtils.isMappingTable(table)) {
+					Table table = metadataExtractor.getTable(tableName, true);
+					if (table.getColumn("uuid") == null) {
 						continue;
 					}
 				}

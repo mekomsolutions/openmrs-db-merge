@@ -98,7 +98,7 @@ public class StepFactory {
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
 	                               TaskExecutor executor) {
 		
-		final Table table = metadataExtractor.getTable(tableName);
+		final Table table = metadataExtractor.getTable(tableName, false);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
 		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(table, processorHelper);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor, executor);
@@ -207,14 +207,14 @@ public class StepFactory {
 		log.info("Merging {} tables", mergeTables.size());
 		MergeUtils.setMergeTables(mergeTables);
 		log.info("Verifying sink tables before merge");
-		mergeTables.forEach(t -> sinkExtractor.getTable(t));
+		mergeTables.forEach(t -> sinkExtractor.getTable(t, false));
 		if (tableWriterMap == null) {
 			tableWriterMap = new HashMap<>(mergeTables.size());
 		}
 		
 		mergeTables.forEach(t -> {
 			tableWriterMap.computeIfAbsent(t, k -> {
-				final String sql = MergeUtils.getWriteSql(sourceExtractor.getTable(k));
+				final String sql = MergeUtils.getWriteSql(sourceExtractor.getTable(k, false));
 				return createBatchWriter(sql, prepStmtParamSetter);
 			});
 		});

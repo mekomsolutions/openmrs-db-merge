@@ -88,7 +88,7 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 				//Database ids will be different so instead compare uuids of the referenced rows.
 				ForeignKey fk = table.getColumn(col).foreignKey();
 				if (MergeUtils.isSubclassTable(fk.referencedTable())) {
-					Table refTable = extractor.getTable(fk.referencedTable());
+					Table refTable = extractor.getTable(fk.referencedTable(), false);
 					//Uuid is in the parent table, so use the foreign from subclass row to parent row be
 					fk = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey();
 				}

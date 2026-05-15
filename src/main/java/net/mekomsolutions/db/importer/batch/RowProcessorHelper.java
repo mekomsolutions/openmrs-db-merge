@@ -152,7 +152,7 @@ public class RowProcessorHelper {
 		boolean isSubclassTable = MergeUtils.isSubclassTable(baseRefTableName);
 		if (isSubclassTable) {
 			//For subclasses, the uuid is in the parent table
-			Table refTable = metadataExtractor.getTable(baseRefTableName);
+			Table refTable = metadataExtractor.getTable(baseRefTableName, false);
 			ForeignKey parentFk = refTable.getColumn(baseRefColName).foreignKey();
 			effectiveRefTableName = parentFk.referencedTable();
 			effectiveRefColName = parentFk.referencedColumn();
