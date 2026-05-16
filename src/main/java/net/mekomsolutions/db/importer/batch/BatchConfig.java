@@ -64,7 +64,7 @@ public class BatchConfig {
 	    throws Exception {
 		
 		final List<String> stepNames = stepFactory.getStepNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
-		    sourceDbHelper, processorHelper, retryWriter, retryRemover, executor);
+		    sourceDbHelper);
 		if (stepNames.isEmpty() && !retry) {
 			//There is nothing to import
 			SimpleJob emptyJob = new SimpleJob();
