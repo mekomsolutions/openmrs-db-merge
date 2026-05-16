@@ -33,6 +33,9 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 @ComponentScan(basePackageClasses = BatchConfig.class)
 public class BatchConfig {
 	
+	@Value("${" + Constants.PROP_RETRY_FAILED_ITEMS + ":false}")
+	private boolean retry;
+	
 	@Bean
 	public JobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
 		TaskExecutorJobLauncher jobLauncher = new TaskExecutorJobLauncher();
@@ -60,28 +63,33 @@ public class BatchConfig {
 	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener listener)
 	    throws Exception {
 		
-		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
-		final List<Step> steps = stepFactory.getSteps(sourceExtractor, sinkExtractor, prepStatementParamSetter,
+		final List<String> stepNames = stepFactory.getStepNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
 		    sourceDbHelper, processorHelper, retryWriter, retryRemover, executor);
+		if (stepNames.isEmpty() && !retry) {
+			//There is nothing to import
+			SimpleJob emptyJob = new SimpleJob();
+			emptyJob.setJobRepository(jobRepository);
+			return emptyJob;
+		}
 		
-		SimpleJobBuilder builder = null;
-		for (Step step : steps) {
-			if (builder == null) {
-				builder = jobBuilder.start(step);
-				continue;
+		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
+		SimpleJobBuilder simpleJobBuilder = null;
+		for (String stepName : stepNames) {
+			Step step = stepFactory.createTableStep(stepName, sourceExtractor, processorHelper, executor);
+			if (simpleJobBuilder == null) {
+				simpleJobBuilder = jobBuilder.start(step);
+			} else {
+				simpleJobBuilder = simpleJobBuilder.next(step);
 			}
-			
-			builder = builder.next(step);
 		}
 		
-		if (!steps.isEmpty()) {
-			return builder.listener(listener).build();
+		if (retry) {
+			Step step = stepFactory.createRetryStep(sourceDbHelper, processorHelper, sourceExtractor, retryWriter,
+			    retryRemover, executor);
+			simpleJobBuilder.next(step);
 		}
 		
-		//There is nothing to import
-		SimpleJob emptyJob = new SimpleJob();
-		emptyJob.setJobRepository(jobRepository);
-		return emptyJob;
+		return simpleJobBuilder.listener(listener).build();
 	}
 	
 	@Bean

@@ -1,13 +1,14 @@
 package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
+import static net.mekomsolutions.db.importer.Constants.PRIORITY_TABLES;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -178,10 +179,10 @@ public class StepFactory {
 		return builder.reader(reader).processor(processor).writer(writer).listener(retryRemover).build();
 	}
 	
-	public List<Step> getSteps(MetadataExtractor sourceExtractor, MetadataExtractor sinkExtractor,
-	                           RowPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper,
-	                           RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
-	                           TaskExecutor executor)
+	public List<String> getStepNames(MetadataExtractor sourceExtractor, MetadataExtractor sinkExtractor,
+	                                 RowPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper,
+	                                 RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
+	                                 TaskExecutor executor)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesResource.getFilename());
@@ -219,18 +220,26 @@ public class StepFactory {
 			});
 		});
 		
-		List<Step> steps = new ArrayList<>(mergeTables.size());
-		mergeTables.stream().forEach(t -> {
-			steps.add(createTableStep(t, sourceExtractor, processorHelper, executor));
+		//Prioritize some tables to be merged first to minimize the need to create placeholders, hence fewer DB trips.
+		Collections.sort(mergeTables, (n1, n2) -> {
+			Integer i1 = PRIORITY_TABLES.indexOf(n1);
+			Integer i2 = PRIORITY_TABLES.indexOf(n2);
+			if (i1 == -1) {
+				//Push to the end of the list
+				i1 = Integer.MAX_VALUE;
+			}
+			
+			if (i2 == -1) {
+				//Push to the end of the list
+				i2 = Integer.MAX_VALUE;
+			}
+			
+			return i1.compareTo(i2);
 		});
 		
-		if (retry) {
-			Step step = createRetryStep(sourceDbHelper, processorHelper, sourceExtractor, retryWriter, retryRemover,
-			    executor);
-			steps.add(step);
-		}
+		log.info("Merging tables -> {}", mergeTables);
 		
-		return steps;
+		return mergeTables;
 	}
 	
 	private <T> ItemProcessor<Map<String, Object>, Future<T>> createAsyncProcessor(ItemProcessor<Map<String, Object>, T> delegate,
