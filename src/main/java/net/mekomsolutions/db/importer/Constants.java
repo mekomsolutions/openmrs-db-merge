@@ -50,7 +50,7 @@ public class Constants {
 	public static final String ENABLE_KEYS = "SET FOREIGN_KEY_CHECKS=1";
 	
 	public static final List<String> PRIORITY_TABLES = List.of("users", "provider", "person", "patient", "visit",
-	    "encounter", "obs");
+	    "encounter", "orders", "obs");
 	
 	public static final List<String> TABLES_WITHOUT_AUTO_INCREMENT = List.of("privilege", "role");
 	
