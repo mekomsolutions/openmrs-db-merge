@@ -66,9 +66,6 @@ public class StepFactory {
 	@Value("${batch.write.size}")
 	private Integer batchWriteSize;
 	
-	@Value("${" + Constants.PROP_RETRY_FAILED_ITEMS + ":false}")
-	private boolean retry;
-	
 	@Value("${" + Constants.PROP_TEST_MERGE_TABLES + ":}")
 	private String[] testTables;
 	
