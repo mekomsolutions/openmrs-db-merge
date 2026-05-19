@@ -18,7 +18,7 @@ public class MgtDbHelper extends BaseDbHelper {
 	        + "error_type = VALUES(error_type) , error_msg = VALUES(error_msg)";
 	
 	public MgtDbHelper(@Qualifier("mgtJdbcTemplate") JdbcTemplate jdbcTemplate) {
-		super("mgt", jdbcTemplate);
+		super("mgt", jdbcTemplate, null);
 	}
 	
 	/**

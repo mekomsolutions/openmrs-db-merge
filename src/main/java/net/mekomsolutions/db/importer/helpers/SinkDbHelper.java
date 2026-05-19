@@ -29,7 +29,7 @@ import net.mekomsolutions.db.importer.Table;
  */
 @Component
 @Slf4j
-public class SinkDbHelper {
+public class SinkDbHelper extends BaseDbHelper {
 	
 	private static final String USER_UNIQUE_COLUMNS = "uniqueCols";
 	
@@ -40,14 +40,11 @@ public class SinkDbHelper {
 	
 	protected NamedParameterJdbcTemplate namedParamJdbcTemplate;
 	
-	protected MetadataExtractor metadataExtractor;
-	
 	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate,
-	    NamedParameterJdbcTemplate namedParamJdbcTemplate,
-	    @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor) {
+	    NamedParameterJdbcTemplate namedParamJdbcTemplate, @Qualifier("sinkExtractor") MetadataExtractor metadataExtractor) {
+		super("sink", jdbcTemplate, metadataExtractor);
 		this.jdbcTemplate = jdbcTemplate;
 		this.namedParamJdbcTemplate = namedParamJdbcTemplate;
-		this.metadataExtractor = metadataExtractor;
 	}
 	
 	/**

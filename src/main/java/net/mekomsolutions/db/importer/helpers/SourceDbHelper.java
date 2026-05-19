@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.MetadataExtractor;
 
 /**
  * Utility class for interacting with a source database using a JDBC template.
@@ -18,8 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SourceDbHelper extends BaseDbHelper {
 	
-	public SourceDbHelper(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate) {
-		super("source", jdbcTemplate);
+	public SourceDbHelper(@Qualifier("sourceJdbcTemplate") JdbcTemplate jdbcTemplate,
+	    @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor) {
+		super("source", jdbcTemplate, metadataExtractor);
 	}
 	
 	/**
