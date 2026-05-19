@@ -18,6 +18,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.Constants;
 import net.mekomsolutions.db.importer.MergeUtils;
@@ -40,11 +41,15 @@ public class SinkDbHelper extends BaseDbHelper {
 	
 	protected NamedParameterJdbcTemplate namedParamJdbcTemplate;
 	
+	@Getter
+	private MetadataExtractor metadataExtractor;
+	
 	public SinkDbHelper(@Qualifier("sinkJdbcTemplate") JdbcTemplate jdbcTemplate,
 	    NamedParameterJdbcTemplate namedParamJdbcTemplate, @Qualifier("sinkExtractor") MetadataExtractor metadataExtractor) {
-		super("sink", jdbcTemplate, metadataExtractor);
+		super("sink", jdbcTemplate);
 		this.jdbcTemplate = jdbcTemplate;
 		this.namedParamJdbcTemplate = namedParamJdbcTemplate;
+		this.metadataExtractor = metadataExtractor;
 	}
 	
 	/**
