@@ -16,7 +16,9 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 @Slf4j
 public class OpenMrsMetadataMapper {
 	
-	private static final List<String> METADATA_TABLES = List.of("visit_type", "encounter_type", "order_type");
+	//TODO Add users, provider and person
+	private static final List<String> METADATA_TABLES = List.of("visit_type", "encounter_type", "order_type", "form",
+	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name");
 	
 	private static final Map<String, Map<Object, Object>> TABLE_AND_IDS_MAP = new HashMap<>();
 	
