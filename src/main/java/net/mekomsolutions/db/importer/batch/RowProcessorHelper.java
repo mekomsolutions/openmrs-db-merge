@@ -33,15 +33,19 @@ public class RowProcessorHelper {
 	
 	private MgtDbHelper mgtDbHelper;
 	
+	protected OpenMrsMetadataMapper metadataMapper;
+	
 	public RowProcessorHelper(@Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
-	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, MgtDbHelper mgtDbHelper) {
+	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, MgtDbHelper mgtDbHelper,
+	    OpenMrsMetadataMapper metadataMapper) {
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
 		this.mgtDbHelper = mgtDbHelper;
+		this.metadataMapper = metadataMapper;
 	}
 	
-	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) throws Exception {
+	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) {
 		String threadName = Thread.currentThread().getName();
 		final String threadNamePrefix = (isRetry ? "retry" : "import") + ":";
 		try {
@@ -115,7 +119,11 @@ public class RowProcessorHelper {
 				Column column = table.getColumn(columnName);
 				ForeignKey fk = column.foreignKey();
 				if (fk != null) {
-					value = resolveForeignKeyValue(value, fk, table);
+					if (metadataMapper.hasIdMappings(fk.referencedTable())) {
+						value = metadataMapper.getSinkId(fk.referencedTable(), value);
+					} else {
+						value = resolveForeignKeyValue(value, fk, table);
+					}
 				}
 			}
 			

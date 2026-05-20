@@ -3,6 +3,7 @@ package net.mekomsolutions.db.importer.batch;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.annotation.AfterJob;
+import org.springframework.batch.core.annotation.BeforeJob;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -27,11 +28,20 @@ public class JobListener {
 	
 	protected SinkDbHelper sinkDbHelper;
 	
+	protected OpenMrsMetadataMapper metadataMapper;
+	
 	public JobListener(@Qualifier("processorExecutor") ThreadPoolTaskExecutor executor, MgtDbHelper mgtDbHelper,
-	    SinkDbHelper sinkDbHelper) {
+	    SinkDbHelper sinkDbHelper, OpenMrsMetadataMapper metadataMapper) {
 		this.executor = executor;
 		this.mgtDbHelper = mgtDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
+		this.metadataMapper = metadataMapper;
+	}
+	
+	@BeforeJob
+	public void beforeJob() {
+		log.info("Starting merge job");
+		metadataMapper.initialize();
 	}
 	
 	@AfterJob

@@ -27,7 +27,7 @@ public abstract class BaseDbHelper {
 	 */
 	public boolean isTableEmpty(String table) {
 		if (log.isDebugEnabled()) {
-			log.debug("Checking if " + name + " table {} is empty", table);
+			log.debug("Checking if {} table {} is empty", name, table);
 		}
 		
 		String query = String.format("SELECT COUNT(*) FROM %s", table);
