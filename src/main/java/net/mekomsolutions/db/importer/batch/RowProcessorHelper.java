@@ -33,11 +33,11 @@ public class RowProcessorHelper {
 	
 	private MgtDbHelper mgtDbHelper;
 	
-	protected OpenMrsMetadataMapper metadataMapper;
+	protected ForeignKeyValueMapper metadataMapper;
 	
 	public RowProcessorHelper(@Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
 	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, MgtDbHelper mgtDbHelper,
-	    OpenMrsMetadataMapper metadataMapper) {
+	    ForeignKeyValueMapper metadataMapper) {
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;

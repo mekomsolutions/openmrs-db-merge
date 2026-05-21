@@ -28,10 +28,10 @@ public class JobListener {
 	
 	protected SinkDbHelper sinkDbHelper;
 	
-	protected OpenMrsMetadataMapper metadataMapper;
+	protected ForeignKeyValueMapper metadataMapper;
 	
 	public JobListener(@Qualifier("processorExecutor") ThreadPoolTaskExecutor executor, MgtDbHelper mgtDbHelper,
-	    SinkDbHelper sinkDbHelper, OpenMrsMetadataMapper metadataMapper) {
+	    SinkDbHelper sinkDbHelper, ForeignKeyValueMapper metadataMapper) {
 		this.executor = executor;
 		this.mgtDbHelper = mgtDbHelper;
 		this.sinkDbHelper = sinkDbHelper;

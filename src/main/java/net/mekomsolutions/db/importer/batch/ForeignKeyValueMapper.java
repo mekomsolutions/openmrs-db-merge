@@ -12,13 +12,22 @@ import net.mekomsolutions.db.importer.Table;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
+/**
+ * An instance of this class is responsible for mapping foreign key row IDs from a source database
+ * to their corresponding row IDs in a sink database, specifically. The mapping is initialized for a
+ * predefined list of metadata tables during application startup. This ensures that all metadata IDs
+ * in the source database can be translated into their respective IDs in the sink database which
+ * greatly improves the speed of the merge. And for some carefully selected tables, as they get the
+ * merged, their ID mappings also get added.
+ */
 @Component
 @Slf4j
-public class OpenMrsMetadataMapper {
+public class ForeignKeyValueMapper {
 	
+	//TODO "users", "provider", "person" to be added at runtime as they get merged.
 	//TODO Add patient_identifier_type, person_attribute_type etc.
 	private static final List<String> METADATA_TABLES = List.of("visit_type", "encounter_type", "order_type", "form",
-	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name", "users", "provider", "person");
+	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name");
 	
 	private static final Map<String, Map<Object, Object>> TABLE_AND_IDS_MAP = new HashMap<>();
 	
@@ -26,7 +35,7 @@ public class OpenMrsMetadataMapper {
 	
 	private SinkDbHelper sinkDbHelper;
 	
-	public OpenMrsMetadataMapper(SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper) {
+	public ForeignKeyValueMapper(SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper) {
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
 	}
