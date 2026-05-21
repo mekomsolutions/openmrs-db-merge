@@ -33,16 +33,16 @@ public class RowProcessorHelper {
 	
 	private MgtDbHelper mgtDbHelper;
 	
-	protected ForeignKeyValueMapper metadataMapper;
+	protected ForeignKeyValueMapCache fkValueMapCache;
 	
 	public RowProcessorHelper(@Qualifier("sourceExtractor") MetadataExtractor metadataExtractor,
 	    SourceDbHelper sourceDbHelper, SinkDbHelper sinkDbHelper, MgtDbHelper mgtDbHelper,
-	    ForeignKeyValueMapper metadataMapper) {
+	    ForeignKeyValueMapCache fkValueMapCache) {
 		this.metadataExtractor = metadataExtractor;
 		this.sourceDbHelper = sourceDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
 		this.mgtDbHelper = mgtDbHelper;
-		this.metadataMapper = metadataMapper;
+		this.fkValueMapCache = fkValueMapCache;
 	}
 	
 	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) {
@@ -128,8 +128,8 @@ public class RowProcessorHelper {
 					}
 					
 					Object sinkRowId = null;
-					if (metadataMapper.hasIdMappings(refTable)) {
-						sinkRowId = metadataMapper.getSinkRowId(refTable, value);
+					if (fkValueMapCache.hasMappings(refTable)) {
+						sinkRowId = fkValueMapCache.getSinkRowId(refTable, value);
 					}
 					
 					//Cached value can be null of the row has not yet been synced e.g. could be in the failure queue.

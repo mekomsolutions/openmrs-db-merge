@@ -28,20 +28,20 @@ public class JobListener {
 	
 	protected SinkDbHelper sinkDbHelper;
 	
-	protected ForeignKeyValueMapper metadataMapper;
+	protected ForeignKeyValueMapCache fkValueMapCache;
 	
 	public JobListener(@Qualifier("processorExecutor") ThreadPoolTaskExecutor executor, MgtDbHelper mgtDbHelper,
-	    SinkDbHelper sinkDbHelper, ForeignKeyValueMapper metadataMapper) {
+	    SinkDbHelper sinkDbHelper, ForeignKeyValueMapCache fkValueMapCache) {
 		this.executor = executor;
 		this.mgtDbHelper = mgtDbHelper;
 		this.sinkDbHelper = sinkDbHelper;
-		this.metadataMapper = metadataMapper;
+		this.fkValueMapCache = fkValueMapCache;
 	}
 	
 	@BeforeJob
 	public void beforeJob() {
 		log.info("Starting merge job");
-		metadataMapper.initialize();
+		fkValueMapCache.initialize();
 	}
 	
 	@AfterJob
