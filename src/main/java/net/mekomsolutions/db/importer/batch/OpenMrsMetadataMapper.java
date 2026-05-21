@@ -16,9 +16,9 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 @Slf4j
 public class OpenMrsMetadataMapper {
 	
-	//TODO Add users, provider and person
+	//TODO Add patient_identifier_type, person_attribute_type etc.
 	private static final List<String> METADATA_TABLES = List.of("visit_type", "encounter_type", "order_type", "form",
-	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name");
+	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name", "users", "provider", "person");
 	
 	private static final Map<String, Map<Object, Object>> TABLE_AND_IDS_MAP = new HashMap<>();
 	
@@ -44,8 +44,11 @@ public class OpenMrsMetadataMapper {
 			Map<String, Object> sinkUuidAndIdMap = sinkRows.stream().collect(HashMap::new,
 			    (map, row) -> map.put(row.get("uuid").toString(), row.get(idCol)), HashMap::putAll);
 			
+			//For non metadata tables, skip any rows that are not yet written to the sink DB.
 			Map<Object, Object> idsMap = sourceIdAndUuidMap.entrySet().stream()
+			        .filter(e -> sinkUuidAndIdMap.containsKey(e.getKey()))
 			        .collect(Collectors.toMap(e -> e.getKey(), e -> sinkUuidAndIdMap.get(e.getValue())));
+			
 			TABLE_AND_IDS_MAP.put(tableName, idsMap);
 		}
 		
@@ -56,7 +59,7 @@ public class OpenMrsMetadataMapper {
 		return TABLE_AND_IDS_MAP.containsKey(tableName);
 	}
 	
-	public Object getSinkId(String tableName, Object sourceId) {
+	public Object getSinkRowId(String tableName, Object sourceId) {
 		return TABLE_AND_IDS_MAP.get(tableName).get(sourceId);
 	}
 	

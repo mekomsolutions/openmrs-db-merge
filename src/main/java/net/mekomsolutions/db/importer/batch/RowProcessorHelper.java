@@ -119,8 +119,22 @@ public class RowProcessorHelper {
 				Column column = table.getColumn(columnName);
 				ForeignKey fk = column.foreignKey();
 				if (fk != null) {
-					if (metadataMapper.hasIdMappings(fk.referencedTable())) {
-						value = metadataMapper.getSinkId(fk.referencedTable(), value);
+					//For a subclass table, use the id mappings of the parent table
+					String refTable = fk.referencedTable();
+					if (MergeUtils.isSubclassTable(refTable)) {
+						String refCol = fk.referencedColumn();
+						refTable = metadataExtractor.getTable(refTable, false).getColumn(refCol).foreignKey()
+						        .referencedTable();
+					}
+					
+					Object sinkRowId = null;
+					if (metadataMapper.hasIdMappings(refTable)) {
+						sinkRowId = metadataMapper.getSinkRowId(refTable, value);
+					}
+					
+					//Cached value can be null of the row has not yet been synced e.g. could be in the failure queue.
+					if (sinkRowId != null) {
+						value = sinkRowId;
 					} else {
 						value = resolveForeignKeyValue(value, fk, table);
 					}

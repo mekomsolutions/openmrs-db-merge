@@ -94,7 +94,7 @@ public class StepFactory {
 	}
 	
 	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
-	                               TaskExecutor executor) {
+	                               TaskExecutor executor, TableStepListener stepListener) {
 		
 		final Table table = metadataExtractor.getTable(tableName, false);
 		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
@@ -103,7 +103,8 @@ public class StepFactory {
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
-		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder()).build();
+		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder())
+		        .listener(stepListener).build();
 	}
 	
 	protected ItemReader<Map<String, Object>> createReader(String tableName, List<String> primaryKeys, DataSource dataSource,

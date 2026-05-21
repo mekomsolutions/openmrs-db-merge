@@ -60,7 +60,8 @@ public class BatchConfig {
 	                     @Qualifier("sinkExtractor") MetadataExtractor sinkExtractor,
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
-	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener listener)
+	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener jobListener,
+	                     TableStepListener stepListener)
 	    throws Exception {
 		
 		final List<String> stepNames = stepFactory.getStepNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
@@ -75,7 +76,7 @@ public class BatchConfig {
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
 		SimpleJobBuilder simpleJobBuilder = null;
 		for (String stepName : stepNames) {
-			Step step = stepFactory.createTableStep(stepName, sourceExtractor, processorHelper, executor);
+			Step step = stepFactory.createTableStep(stepName, sourceExtractor, processorHelper, executor, stepListener);
 			if (simpleJobBuilder == null) {
 				simpleJobBuilder = jobBuilder.start(step);
 			} else {
@@ -89,7 +90,7 @@ public class BatchConfig {
 			simpleJobBuilder.next(step);
 		}
 		
-		return simpleJobBuilder.listener(listener).build();
+		return simpleJobBuilder.listener(jobListener).build();
 	}
 	
 	@Bean
