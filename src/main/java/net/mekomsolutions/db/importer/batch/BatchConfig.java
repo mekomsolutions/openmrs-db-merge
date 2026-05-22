@@ -64,9 +64,9 @@ public class BatchConfig {
 	                     TableStepListener stepListener)
 	    throws Exception {
 		
-		final List<String> stepNames = stepFactory.getStepNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
+		final List<String> tableNames = stepFactory.getTableNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
 		    sourceDbHelper);
-		if (stepNames.isEmpty() && !retry) {
+		if (tableNames.isEmpty() && !retry) {
 			//There is nothing to import
 			SimpleJob emptyJob = new SimpleJob();
 			emptyJob.setJobRepository(jobRepository);
@@ -75,17 +75,17 @@ public class BatchConfig {
 		
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
 		SimpleJobBuilder simpleJobBuilder = null;
-		for (String stepName : stepNames) {
-			String name = stepName;
-			boolean isObs = stepName.equals("obs");
+		for (String tableName : tableNames) {
+			String stepName = tableName;
+			boolean isObs = tableName.equals("obs");
 			String filterClause = null;
 			if (isObs) {
-				name = Constants.STEP_NAME_PARENT_OBS;
+				stepName = Constants.STEP_NAME_PARENT_OBS;
 				filterClause = Constants.PARENT_OBS_CLAUSE;
 			}
 			
-			Step step = stepFactory.createTableStep(name, stepName, null, filterClause, sourceExtractor, processorHelper,
-			    executor, stepListener);
+			Step step = stepFactory.createTableStep(stepName, tableName, null, filterClause, sourceExtractor,
+			    processorHelper, executor, stepListener);
 			if (simpleJobBuilder == null) {
 				simpleJobBuilder = jobBuilder.start(step);
 			} else {
@@ -93,9 +93,9 @@ public class BatchConfig {
 			}
 			
 			if (isObs) {
-				name = Constants.STEP_NAME_CHILDLESS_OBS;
+				stepName = Constants.STEP_NAME_CHILDLESS_OBS;
 				filterClause = Constants.CHILDLESS_OBS_CLAUSE;
-				Step nextStep = stepFactory.createTableStep(name, stepName, Constants.TABLE_ALIAS, filterClause,
+				Step nextStep = stepFactory.createTableStep(stepName, tableName, Constants.TABLE_ALIAS, filterClause,
 				    sourceExtractor, processorHelper, executor, stepListener);
 				simpleJobBuilder = simpleJobBuilder.next(nextStep);
 			}

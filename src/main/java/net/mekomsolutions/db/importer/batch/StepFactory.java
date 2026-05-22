@@ -198,8 +198,8 @@ public class StepFactory {
 		return builder.reader(reader).processor(processor).writer(writer).listener(retryRemover).build();
 	}
 	
-	public List<String> getStepNames(MetadataExtractor sourceExtractor, MetadataExtractor sinkExtractor,
-	                                 RowPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper)
+	public List<String> getTableNames(MetadataExtractor sourceExtractor, MetadataExtractor sinkExtractor,
+	                                  RowPreparedStatementParamSetter prepStmtParamSetter, SourceDbHelper sourceDbHelper)
 	    throws IOException {
 		
 		log.info("Retrieving exclude tables defined in file {}", excludeTablesResource.getFilename());
