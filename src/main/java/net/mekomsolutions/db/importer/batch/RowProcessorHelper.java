@@ -133,11 +133,11 @@ public class RowProcessorHelper {
 					}
 					
 					//Cached value can be null of the row has not yet been synced e.g. could be in the failure queue.
-					if (sinkRowId != null) {
-						value = sinkRowId;
-					} else {
-						value = resolveForeignKeyValue(value, fk, table);
+					if (sinkRowId == null) {
+						sinkRowId = resolveForeignKeyValue(value, fk, table);
 					}
+					
+					value = sinkRowId;
 				}
 			}
 			
