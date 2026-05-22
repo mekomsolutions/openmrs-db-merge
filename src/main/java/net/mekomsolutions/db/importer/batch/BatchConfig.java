@@ -76,11 +76,28 @@ public class BatchConfig {
 		JobBuilder jobBuilder = new JobBuilder(Constants.JOB_NAME, jobRepository).preventRestart();
 		SimpleJobBuilder simpleJobBuilder = null;
 		for (String stepName : stepNames) {
-			Step step = stepFactory.createTableStep(stepName, sourceExtractor, processorHelper, executor, stepListener);
+			String name = stepName;
+			boolean isObs = stepName.equals("obs");
+			String filterClause = null;
+			if (isObs) {
+				name = Constants.STEP_NAME_PARENT_OBS;
+				filterClause = Constants.PARENT_OBS_CLAUSE;
+			}
+			
+			Step step = stepFactory.createTableStep(name, stepName, filterClause, sourceExtractor, processorHelper, executor,
+			    stepListener);
 			if (simpleJobBuilder == null) {
 				simpleJobBuilder = jobBuilder.start(step);
 			} else {
 				simpleJobBuilder = simpleJobBuilder.next(step);
+			}
+			
+			if (isObs) {
+				name = Constants.STEP_NAME_CHILDLESS_OBS;
+				filterClause = Constants.CHILDLESS_OBS_CLAUSE;
+				Step nextStep = stepFactory.createTableStep(name, stepName, filterClause, sourceExtractor, processorHelper,
+				    executor, stepListener);
+				simpleJobBuilder = simpleJobBuilder.next(nextStep);
 			}
 		}
 		

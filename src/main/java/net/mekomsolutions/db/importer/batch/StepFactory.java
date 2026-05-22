@@ -93,21 +93,23 @@ public class StepFactory {
 		this.mgtDataSource = mgtDataSource;
 	}
 	
-	protected Step createTableStep(String tableName, MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
+	protected Step createTableStep(String stepName, String tableName, String filterClause,
+	                               MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
 	                               TaskExecutor executor, TableStepListener stepListener) {
-		
 		final Table table = metadataExtractor.getTable(tableName, false);
-		ItemReader<Map<String, Object>> reader = createReader(tableName, table.primaryKeys(), sourceDataSource, true);
+		ItemReader<Map<String, Object>> reader = createReader(stepName, tableName, filterClause, table.primaryKeys(),
+		    sourceDataSource, true);
 		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(table, processorHelper);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor, executor);
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
-		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(tableName, jobRepository)
+		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(stepName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
 		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder())
 		        .listener(stepListener).build();
 	}
 	
-	protected ItemReader<Map<String, Object>> createReader(String tableName, List<String> primaryKeys, DataSource dataSource,
+	protected ItemReader<Map<String, Object>> createReader(String stepName, String tableName, String filterClause,
+	                                                       List<String> primaryKeys, DataSource dataSource,
 	                                                       boolean resumable) {
 		
 		Map<String, Order> sortKeys = primaryKeys.stream()
@@ -116,10 +118,24 @@ public class StepFactory {
 		builder.name(tableName).dataSource(dataSource).selectClause("SELECT *").fromClause("FROM " + tableName)
 		        .sortKeys(sortKeys).pageSize(batchReadSize).rowMapper(ROW_MAPPER);
 		if (resumable) {
-			final Object maxProcessedRowId = MergeUtils.getMaxRowId(jobExplorer, jobRepository, tableName);
+			StringBuilder clauseBuilder = new StringBuilder();
+			if (filterClause != null) {
+				clauseBuilder.append(filterClause);
+			}
+			
+			final Object maxProcessedRowId = MergeUtils.getMaxRowId(jobExplorer, jobRepository, stepName);
 			if (maxProcessedRowId != null) {
 				log.info("Importing rows from {} table with {} > {}", tableName, primaryKeys.get(0), maxProcessedRowId);
-				builder.whereClause(primaryKeys.get(0) + " > " + maxProcessedRowId);
+				if (filterClause != null) {
+					clauseBuilder.append(" AND ");
+				}
+				
+				clauseBuilder.append(primaryKeys.get(0) + " > " + maxProcessedRowId);
+			}
+			
+			String clause = clauseBuilder.toString();
+			if (!clause.isBlank()) {
+				builder.whereClause(clause);
 			}
 		}
 		
@@ -165,7 +181,8 @@ public class StepFactory {
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
 	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover,
 	                            TaskExecutor executor) {
-		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, List.of("id"), mgtDataSource, false);
+		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, FAILED_ITEM_TABLE, null, List.of("id"),
+		    mgtDataSource, false);
 		ItemProcessor<Map<String, Object>, Retry> retryProcessor = new RetryItemProcessor(sourceDbHelper, processorHelper,
 		        metadataExtractor);
 		ItemProcessor<Map<String, Object>, Future<Retry>> processor = createAsyncProcessor(retryProcessor, executor);

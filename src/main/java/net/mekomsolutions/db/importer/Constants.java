@@ -54,4 +54,12 @@ public class Constants {
 	
 	public static final List<String> TABLES_WITHOUT_AUTO_INCREMENT = List.of("privilege", "role");
 	
+	public static final String STEP_NAME_PARENT_OBS = "Parent Obs";
+	
+	public static final String STEP_NAME_CHILDLESS_OBS = "Childless Obs";
+	
+	public static final String PARENT_OBS_CLAUSE = "obs_id IN (SELECT obs_group_id FROM obs)";
+	
+	public static final String CHILDLESS_OBS_CLAUSE = "NOT EXISTS (SELECT 1 FROM obs b WHERE a.obs_id = b.obs_group_id)";
+	
 }
