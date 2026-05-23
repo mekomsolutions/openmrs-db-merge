@@ -2,7 +2,6 @@ package net.mekomsolutions.db.importer.batch;
 
 import static net.mekomsolutions.db.importer.MergeUtils.insertPlaceholderSubclassRow;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -194,7 +193,6 @@ public class RowProcessorHelper {
 			throw new RuntimeException(msg);
 		}
 		
-		refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
 		Object sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "uuid", refUuid);
 		if (sinkValue == null) {
 			if (log.isDebugEnabled()) {

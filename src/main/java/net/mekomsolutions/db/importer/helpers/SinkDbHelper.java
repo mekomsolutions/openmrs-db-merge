@@ -4,7 +4,6 @@ import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -100,7 +99,6 @@ public class SinkDbHelper extends BaseDbHelper {
 		String query = String.format("SELECT s.%s FROM %s s INNER JOIN %s p ON s.%s = p.%s WHERE p.uuid = ?",
 		    subclassPkColumn, subclassTableName, parentTableName, subclassPkColumn, parentPkColumn);
 		try {
-			uuid = uuid.toString().toLowerCase(Locale.ENGLISH);
 			return jdbcTemplate.queryForObject(query, new Object[] { uuid }, Object.class);
 		}
 		catch (EmptyResultDataAccessException e) {
