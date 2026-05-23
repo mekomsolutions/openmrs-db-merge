@@ -195,7 +195,7 @@ public class RowProcessorHelper {
 		}
 		
 		refUuid = refUuid.toString().toLowerCase(Locale.ENGLISH);
-		Object sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "LOWER(uuid)", refUuid);
+		Object sinkValue = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "uuid", refUuid);
 		if (sinkValue == null) {
 			if (log.isDebugEnabled()) {
 				final String msg = String.format(

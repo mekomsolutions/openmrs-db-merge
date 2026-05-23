@@ -97,7 +97,7 @@ public class SinkDbHelper extends BaseDbHelper {
 	public Object getSubclassRowId(Object uuid, String subclassTableName, String subclassPkColumn, String parentTableName,
 	                               String parentPkColumn) {
 		
-		String query = String.format("SELECT s.%s FROM %s s INNER JOIN %s p ON s.%s = p.%s WHERE LOWER(p.uuid) = ?",
+		String query = String.format("SELECT s.%s FROM %s s INNER JOIN %s p ON s.%s = p.%s WHERE p.uuid = ?",
 		    subclassPkColumn, subclassTableName, parentTableName, subclassPkColumn, parentPkColumn);
 		try {
 			uuid = uuid.toString().toLowerCase(Locale.ENGLISH);
