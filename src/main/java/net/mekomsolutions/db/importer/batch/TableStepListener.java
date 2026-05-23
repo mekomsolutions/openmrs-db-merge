@@ -30,14 +30,16 @@ public class TableStepListener {
 	
 	@AfterStep
 	public void afterStep(StepExecution stepExecution) {
-		String tableName = stepExecution.getStepName();
-		if (MergeUtils.isSubclassTable(tableName)) {
-			final Table table = metadataExtractor.getTable(tableName, false);
-			tableName = table.getColumn(table.primaryKeys().get(0)).foreignKey().referencedTable();
+		String stepName = stepExecution.getStepName();
+		String tableName = stepName;
+		if (MergeUtils.isSubclassTable(stepName)) {
+			final Table table = metadataExtractor.getTable(stepName, false);
+			String parentTable = table.getColumn(table.primaryKeys().get(0)).foreignKey().referencedTable();
 			if (log.isDebugEnabled()) {
-				log.debug("Deferring to parent table {} instead of {} for id mappings", tableName,
-				    stepExecution.getStepName());
+				log.debug("Deferring to parent table {} instead of {} for id mappings", parentTable, tableName);
 			}
+			
+			tableName = parentTable;
 		}
 		
 		if (fkValueMapCache.isMappingCandidate(tableName)) {
