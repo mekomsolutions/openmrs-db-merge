@@ -17,9 +17,9 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
  * source database to their corresponding row IDs in a sink database, specifically. The mapping is
  * initialized for a predefined list of fully cached tables during application startup. This ensures
  * that all database IDs in the source database can be translated into their respective IDs in the
- * sink database which greatly improves the speed of the merge. Before a chunk of rows is processed,
- * any referenced row ids are read once for each referenced table and added to the cache, after the
- * chunk is written to the database, these row ids are removed from the cache.
+ * sink database which greatly improves the speed of the merge.
+ * 
+ * @see TemporaryCachingListener
  */
 @Component
 @Slf4j

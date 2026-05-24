@@ -94,8 +94,7 @@ public class StepFactory {
 	
 	protected Step createTableStep(String stepName, String tableName, String tableAlias, String filterClause,
 	                               MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
-	                               TaskExecutor executor, TableStepListener stepListener,
-	                               ForeignKeyValueMapCache fkValueMapCache) {
+	                               TaskExecutor executor, ForeignKeyValueMapCache fkValueMapCache) {
 		
 		final Table table = metadataExtractor.getTable(tableName, false);
 		ItemReader<Map<String, Object>> reader = createReader(stepName, tableName, tableAlias, filterClause,
@@ -105,8 +104,9 @@ public class StepFactory {
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(stepName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
-		MaxRowIdRecorder maxRowIdRecorder = new MaxRowIdRecorder(tableName, fkValueMapCache, metadataExtractor);
-		return builder.reader(reader).processor(processor).writer(writer).listener(maxRowIdRecorder).listener(stepListener)
+		MaxRowIdRecordingListener maxRowIdListener = new MaxRowIdRecordingListener(tableName);
+		TemporaryCachingListener cacheListener = new TemporaryCachingListener(tableName, fkValueMapCache, metadataExtractor);
+		return builder.reader(reader).processor(processor).writer(writer).listener(maxRowIdListener).listener(cacheListener)
 		        .build();
 	}
 	
@@ -126,17 +126,17 @@ public class StepFactory {
 				clauseBuilder.append(filterClause);
 			}
 			
-			final Object maxProcessedRowId = MergeUtils.getMaxRowId(jobExplorer, jobRepository, stepName);
-			if (maxProcessedRowId != null) {
+			final Object maxWrittenRowId = MergeUtils.getMaxRowId(jobExplorer, jobRepository, stepName);
+			if (maxWrittenRowId != null) {
 				final String primaryKey = primaryKeys.get(0);
 				final String name = stepName.equals(tableName) ? "" : "(" + stepName + ")";
-				log.info("Importing rows from {}{} table with {} > {}", tableName, name, primaryKey, maxProcessedRowId);
+				log.info("Importing rows from {}{} table with {} > {}", tableName, name, primaryKey, maxWrittenRowId);
 				if (filterClause != null) {
 					clauseBuilder.append(" AND ");
 				}
 				
 				final String pkName = (tableAlias == null ? "" : tableAlias + ".") + primaryKey;
-				clauseBuilder.append(pkName + " > " + maxProcessedRowId);
+				clauseBuilder.append(pkName + " > " + maxWrittenRowId);
 			}
 			
 			String clause = clauseBuilder.toString();

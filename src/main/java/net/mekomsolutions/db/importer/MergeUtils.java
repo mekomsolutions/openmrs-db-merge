@@ -239,7 +239,7 @@ public class MergeUtils {
 		Integer rowId = null;
 		StepExecution stepExecution = jobRepository.getLastStepExecution(jobInstance, tableName);
 		if (stepExecution != null) {
-			rowId = stepExecution.getExecutionContext().get(Constants.STEP_KEY_MAX_PROCESSED_ID, Integer.class, null);
+			rowId = stepExecution.getExecutionContext().get(Constants.STEP_KEY_MAX_WRITTEN_ID, Integer.class, null);
 		}
 		
 		return rowId;

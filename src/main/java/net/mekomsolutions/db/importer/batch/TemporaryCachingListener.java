@@ -1,57 +1,57 @@
 package net.mekomsolutions.db.importer.batch;
 
-import static net.mekomsolutions.db.importer.Constants.STEP_KEY_MAX_PROCESSED_ID;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
-import org.springframework.batch.core.annotation.AfterChunk;
 import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeChunk;
 import org.springframework.batch.core.annotation.BeforeProcess;
-import org.springframework.batch.core.scope.context.ChunkContext;
-import org.springframework.batch.core.scope.context.StepContext;
-import org.springframework.batch.item.Chunk;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.ForeignKey;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
-import net.mekomsolutions.db.importer.Row;
 import net.mekomsolutions.db.importer.Table;
 
+/**
+ * An instance of this class is responsible for loading and temporarily caching all reference rows
+ * by the rows in a chunk that is being processed by the item processor to improve speed. The way
+ * this works is, before a chunk of rows is processed, all referenced row id by every row in the
+ * chunk are read once for each referenced table and added to the cache, after the chunk is written
+ * to the sink database, these row ids are all removed from the cache.
+ * 
+ * @see ForeignKeyValueMapCache
+ */
 @Slf4j
-public class MaxRowIdRecorder {
+public class TemporaryCachingListener {
 	
 	private String tableName;
 	
-	private ForeignKeyValueMapCache cache;
+	protected ForeignKeyValueMapCache cache;
 	
-	private MetadataExtractor metadataExtractor;
-	
-	private Object maxProcessedRowId = null;
+	protected MetadataExtractor metadataExtractor;
 	
 	private List<Map<String, Object>> rows;
 	
 	private boolean processing;
 	
-	public MaxRowIdRecorder(String tableName, ForeignKeyValueMapCache cache, MetadataExtractor metadataExtractor) {
+	public TemporaryCachingListener(String tableName, ForeignKeyValueMapCache cache,
+	    @Qualifier("sourceExtractor") MetadataExtractor metadataExtractor) {
+		this.tableName = tableName;
 		this.cache = cache;
 		this.metadataExtractor = metadataExtractor;
-		this.tableName = tableName;
 	}
 	
 	@BeforeChunk
 	public void beforeChunk() {
 		if (log.isTraceEnabled()) {
-			log.trace("Clearing max processed row id from previous chunks");
+			log.trace("Preparing temporary cache for chunk");
 		}
 		
-		maxProcessedRowId = null;
 		processing = false;
 		rows = new ArrayList<>();
 	}
@@ -64,6 +64,7 @@ public class MaxRowIdRecorder {
 	@BeforeProcess
 	public void beforeProcess() {
 		if (!processing) {
+			//Because tables are serially merged, it's okay to synchronize on the instance.
 			synchronized (this) {
 				if (!processing) {
 					Table table = metadataExtractor.getTable(tableName, false);
@@ -103,51 +104,8 @@ public class MaxRowIdRecorder {
 	}
 	
 	@AfterWrite
-	public void afterWrite(Chunk<Future<Row>> chunk) {
-		if (log.isTraceEnabled()) {
-			log.trace("Resolving max row id from chunk of size {}", chunk.size());
-		}
-		
-		//Resume support is currently not supported for extension and mapping tables because they are the ones
-		//where id would be null.
-		try {
-			List<Row> rows = new ArrayList<>(chunk.size());
-			for (Future<Row> future : chunk.getItems()) {
-				Row row = future.get();
-				if (row != null) {
-					rows.add(row);
-				}
-			}
-			
-			if (rows.size() > 0 && rows.get(0).id() != null) {
-				maxProcessedRowId = rows.stream().map(r -> {
-					try {
-						return r.id();
-					}
-					catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}).max(Integer::compareTo).get();
-			}
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		finally {
-			cache.clearTemporaryIdMappings();
-		}
-	}
-	
-	@AfterChunk
-	public void afterChunk(ChunkContext context) {
-		if (maxProcessedRowId != null) {
-			final StepContext stepContext = context.getStepContext();
-			if (log.isTraceEnabled()) {
-				log.trace("Saving max row id of {} for table {}", maxProcessedRowId, stepContext.getStepName());
-			}
-			
-			stepContext.getStepExecution().getExecutionContext().put(STEP_KEY_MAX_PROCESSED_ID, maxProcessedRowId);
-		}
+	public void afterWrite() {
+		cache.clearTemporaryIdMappings();
 	}
 	
 }

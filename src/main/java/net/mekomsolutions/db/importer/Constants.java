@@ -13,7 +13,7 @@ public class Constants {
 	
 	public static final String JOB_NAME = "mergeJob";
 	
-	public static final String STEP_KEY_MAX_PROCESSED_ID = Constants.class.getPackageName() + ".maxProcessedRowId";
+	public static final String STEP_KEY_MAX_WRITTEN_ID = Constants.class.getPackageName() + ".maxWrittenRowId";
 	
 	public static final Date EPOCH_DATE = Date.valueOf(LocalDate.of(1970, Month.JANUARY, 1));
 	
