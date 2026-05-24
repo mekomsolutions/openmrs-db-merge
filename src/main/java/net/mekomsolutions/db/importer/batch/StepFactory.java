@@ -94,7 +94,8 @@ public class StepFactory {
 	
 	protected Step createTableStep(String stepName, String tableName, String tableAlias, String filterClause,
 	                               MetadataExtractor metadataExtractor, RowProcessorHelper processorHelper,
-	                               TaskExecutor executor, TableStepListener stepListener) {
+	                               TaskExecutor executor, TableStepListener stepListener,
+	                               ForeignKeyValueMapCache fkValueMapCache) {
 		
 		final Table table = metadataExtractor.getTable(tableName, false);
 		ItemReader<Map<String, Object>> reader = createReader(stepName, tableName, tableAlias, filterClause,
@@ -104,8 +105,9 @@ public class StepFactory {
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(stepName, jobRepository)
 		        .chunk(batchWriteSize, sinkTxManager);
-		return builder.reader(reader).processor(processor).writer(writer).listener(new MaxRowIdRecorder())
-		        .listener(stepListener).build();
+		MaxRowIdRecorder maxRowIdRecorder = new MaxRowIdRecorder(tableName, fkValueMapCache, metadataExtractor);
+		return builder.reader(reader).processor(processor).writer(writer).listener(maxRowIdRecorder).listener(stepListener)
+		        .build();
 	}
 	
 	protected ItemReader<Map<String, Object>> createReader(String stepName, String tableName, String tableAlias,
@@ -128,7 +130,7 @@ public class StepFactory {
 			if (maxProcessedRowId != null) {
 				final String primaryKey = primaryKeys.get(0);
 				final String name = stepName.equals(tableName) ? "" : "(" + stepName + ")";
-				log.info("Importing rows from {} table with {} > {}", tableName, name, primaryKey, maxProcessedRowId);
+				log.info("Importing rows from {}{} table with {} > {}", tableName, name, primaryKey, maxProcessedRowId);
 				if (filterClause != null) {
 					clauseBuilder.append(" AND ");
 				}

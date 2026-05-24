@@ -61,7 +61,7 @@ public class BatchConfig {
 	                     RowPreparedStatementParamSetter prepStatementParamSetter, SourceDbHelper sourceDbHelper,
 	                     RowProcessorHelper processorHelper, RetryWriter retryWriter, RetryRemover retryRemover,
 	                     @Qualifier("processorExecutor") TaskExecutor executor, JobListener jobListener,
-	                     TableStepListener stepListener)
+	                     TableStepListener stepListener, ForeignKeyValueMapCache fkValueMapCache)
 	    throws Exception {
 		
 		final List<String> tableNames = stepFactory.getTableNames(sourceExtractor, sinkExtractor, prepStatementParamSetter,
@@ -85,7 +85,7 @@ public class BatchConfig {
 			}
 			
 			Step step = stepFactory.createTableStep(stepName, tableName, null, filterClause, sourceExtractor,
-			    processorHelper, executor, stepListener);
+			    processorHelper, executor, stepListener, fkValueMapCache);
 			if (simpleJobBuilder == null) {
 				simpleJobBuilder = jobBuilder.start(step);
 			} else {
@@ -96,7 +96,7 @@ public class BatchConfig {
 				stepName = Constants.STEP_NAME_CHILDLESS_OBS;
 				filterClause = Constants.CHILDLESS_OBS_CLAUSE;
 				Step nextStep = stepFactory.createTableStep(stepName, tableName, Constants.TABLE_ALIAS, filterClause,
-				    sourceExtractor, processorHelper, executor, stepListener);
+				    sourceExtractor, processorHelper, executor, stepListener, fkValueMapCache);
 				simpleJobBuilder = simpleJobBuilder.next(nextStep);
 			}
 		}

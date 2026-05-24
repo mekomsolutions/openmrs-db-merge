@@ -63,4 +63,40 @@ public abstract class BaseDbHelper {
 		}
 	}
 	
+	/**
+	 * Retrieves rows from the specified database table based on the provided filter column and values.
+	 * The returned rows will include the primary key values and uuids for matching records.
+	 *
+	 * @param tableName the name of the database table to query
+	 * @param pkColName the primary key column name to be retrieved
+	 * @param filterColName the column name to filter the rows
+	 * @param values an array of values to match against the filter column
+	 * @return a list of rows, where each row is represented as a Map<String, Object>
+	 */
+	public List<Map<String, Object>> getRows(String tableName, String pkColName, String filterColName, Object[] values) {
+		if (log.isDebugEnabled()) {
+			log.info("Retrieving {} and uuid for {} rows from {} table {} matching {}", pkColName, values.length, name,
+			    tableName, filterColName);
+		}
+		
+		StringBuilder placeholders = new StringBuilder();
+		for (int i = 0; i < values.length; i++) {
+			placeholders.append("?");
+			if (i < values.length - 1) {
+				placeholders.append(",");
+			}
+		}
+		
+		String query = String.format("SELECT %s,uuid FROM %s WHERE %s IN (%s)", pkColName, tableName, filterColName,
+		    placeholders);
+		try {
+			return jdbcTemplate.queryForList(query, values);
+		}
+		catch (Exception e) {
+			final String message = String.format("Failed to retrieve %s and uuid for rows in %s table %s matching %s",
+			    pkColName, name, tableName, filterColName);
+			throw new RuntimeException(message, e);
+		}
+	}
+	
 }

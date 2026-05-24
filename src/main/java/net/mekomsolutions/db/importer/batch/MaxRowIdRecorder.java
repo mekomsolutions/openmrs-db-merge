@@ -4,30 +4,101 @@ import static net.mekomsolutions.db.importer.Constants.STEP_KEY_MAX_PROCESSED_ID
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Future;
 
 import org.springframework.batch.core.annotation.AfterChunk;
+import org.springframework.batch.core.annotation.AfterRead;
 import org.springframework.batch.core.annotation.AfterWrite;
 import org.springframework.batch.core.annotation.BeforeChunk;
+import org.springframework.batch.core.annotation.BeforeProcess;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.scope.context.StepContext;
 import org.springframework.batch.item.Chunk;
 
 import lombok.extern.slf4j.Slf4j;
+import net.mekomsolutions.db.importer.ForeignKey;
+import net.mekomsolutions.db.importer.MergeUtils;
+import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.Table;
 
 @Slf4j
 public class MaxRowIdRecorder {
 	
+	private String tableName;
+	
+	private ForeignKeyValueMapCache cache;
+	
+	private MetadataExtractor metadataExtractor;
+	
 	private Object maxProcessedRowId = null;
 	
+	private List<Map<String, Object>> rows;
+	
+	private boolean processing;
+	
+	public MaxRowIdRecorder(String tableName, ForeignKeyValueMapCache cache, MetadataExtractor metadataExtractor) {
+		this.cache = cache;
+		this.metadataExtractor = metadataExtractor;
+		this.tableName = tableName;
+	}
+	
 	@BeforeChunk
-	public void beforeChunk(ChunkContext context) {
+	public void beforeChunk() {
 		if (log.isTraceEnabled()) {
 			log.trace("Clearing max processed row id from previous chunks");
 		}
 		
 		maxProcessedRowId = null;
+		processing = false;
+		rows = new ArrayList<>();
+	}
+	
+	@AfterRead
+	public void afterRead(Map<String, Object> row) {
+		rows.add(row);
+	}
+	
+	@BeforeProcess
+	public void beforeProcess() {
+		if (!processing) {
+			synchronized (this) {
+				if (!processing) {
+					Table table = metadataExtractor.getTable(tableName, false);
+					for (String columnName : table.columns().keySet().stream()
+					        .filter(c -> table.getColumn(c).foreignKey() != null).toList()) {
+						ForeignKey fk = table.getColumn(columnName).foreignKey();
+						String refTableName = fk.referencedTable();
+						Table refTable = metadataExtractor.getTable(refTableName, false);
+						if (MergeUtils.isSubclassTable(refTableName)) {
+							String parentTable = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey()
+							        .referencedTable();
+							if (log.isDebugEnabled()) {
+								log.debug("Deferring to parent table {} instead of {} for id mappings", parentTable,
+								    refTableName);
+							}
+							
+							refTableName = parentTable;
+						}
+						
+						if (!cache.isFullyCachedTable(refTableName) && cache.isTemporaryCachedTable(refTableName)) {
+							Object[] ids = rows.stream().map(r -> r.get(columnName)).filter(Objects::nonNull).toArray();
+							if (ids.length > 0) {
+								if (log.isDebugEnabled()) {
+									log.debug("{} Ref on {}.{}", tableName, refTableName, columnName);
+								}
+								
+								cache.addTempRowIdMappings(refTableName, ids);
+							}
+						}
+					}
+					
+					processing = true;
+				}
+			}
+		}
 	}
 	
 	@AfterWrite
@@ -60,6 +131,9 @@ public class MaxRowIdRecorder {
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+		finally {
+			cache.clearTemporaryIdMappings();
 		}
 	}
 	

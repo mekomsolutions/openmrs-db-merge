@@ -15,21 +15,23 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 /**
  * An instance of this class is responsible for caching mappings of foreign key row IDs from a
  * source database to their corresponding row IDs in a sink database, specifically. The mapping is
- * initialized for a predefined list of metadata tables during application startup. This ensures
- * that all metadata IDs in the source database can be translated into their respective IDs in the
- * sink database which greatly improves the speed of the merge. And for some carefully selected
- * tables, as they get the merged, their ID mappings also get added.
+ * initialized for a predefined list of fully cached tables during application startup. This ensures
+ * that all database IDs in the source database can be translated into their respective IDs in the
+ * sink database which greatly improves the speed of the merge. Before a chunk of rows is processed,
+ * any referenced row ids are read once for each referenced table and added to the cache, after the
+ * chunk is written to the database, these row ids are removed from the cache.
  */
 @Component
 @Slf4j
 public class ForeignKeyValueMapCache {
 	
 	//TODO Add role, privilege
-	private static final List<String> METADATA_TABLES = List.of("visit_type", "encounter_type", "order_type", "form",
-	    "location", "care_setting", "order_frequency", "drug", "concept", "concept_name", "patient_identifier_type",
+	private static final List<String> FULL_TABLES = List.of("visit_type", "encounter_type", "order_type", "form", "location",
+	    "care_setting", "order_frequency", "drug", "concept", "concept_name", "patient_identifier_type",
 	    "visit_attribute_type", "encounter_role", "person_attribute_type");
 	
-	private static final List<String> CANDIDATE_TABLES = List.of("users", "provider", "person", "visit", "encounter");
+	private static final List<String> TEMP_TABLES = List.of("users", "provider", "person", "visit", "encounter", "orders",
+	    "obs");
 	
 	private static final Map<String, Map<Object, Object>> TABLE_AND_IDS_MAP = new HashMap<>();
 	
@@ -43,48 +45,75 @@ public class ForeignKeyValueMapCache {
 	}
 	
 	public void initialize() {
-		log.info("Initializing source to sink row id mappings for OpenMRS metadata");
-		for (String tableName : METADATA_TABLES) {
-			addMappings(tableName);
+		log.info("Initializing source to sink row id mappings for fully cached tables");
+		for (String tableName : FULL_TABLES) {
+			addIdMappings(tableName);
 		}
 		
-		log.info("Done initializing source to sink row id mappings for OpenMRS metadata");
+		log.info("Done initializing source to sink row id mappings for fully cached tables");
+	}
+	
+	public boolean isFullyCachedTable(String tableName) {
+		return FULL_TABLES.contains(tableName);
+	}
+	
+	public boolean isTemporaryCachedTable(String tableName) {
+		return TEMP_TABLES.contains(tableName);
 	}
 	
 	public boolean hasMappings(String tableName) {
 		return TABLE_AND_IDS_MAP.containsKey(tableName);
 	}
 	
-	public boolean isMappingCandidate(String tableName) {
-		return CANDIDATE_TABLES.contains(tableName);
+	public Object getSinkRowId(String tableName, Object sourceId) {
+		return TABLE_AND_IDS_MAP.get(tableName).get(sourceId);
 	}
 	
-	public void addMappings(String tableName) {
-		log.info("Adding id mappings to cache for {} table", tableName);
+	public void clearTemporaryIdMappings() {
+		TEMP_TABLES.forEach(t -> TABLE_AND_IDS_MAP.remove(t));
+	}
+	
+	public void addIdMappings(String tableName) {
+		log.info("Caching id mappings for {} table", tableName);
 		Table table = sinkDbHelper.getMetadataExtractor().getTable(tableName, false);
 		final String idCol = table.primaryKeys().get(0);
 		List<Map<String, Object>> sourceRows = sourceDbHelper.getAllRows(tableName, idCol);
-		Map<Object, String> sourceIdAndUuidMap = sourceRows.stream().collect(HashMap::new,
-		    (map, row) -> map.put(row.get(idCol), row.get("uuid").toString()), HashMap::putAll);
-		
 		List<Map<String, Object>> sinkRows = sinkDbHelper.getAllRows(tableName, idCol);
-		Map<String, Object> sinkUuidAndIdMap = sinkRows.stream().collect(HashMap::new,
-		    (map, row) -> map.put(row.get("uuid").toString(), row.get(idCol)), HashMap::putAll);
-		
-		//For non metadata tables, skip any rows that are not yet written to the sink DB.
-		Map<Object, Object> idsMap = sourceIdAndUuidMap.entrySet().stream()
-		        .filter(e -> sinkUuidAndIdMap.containsKey(e.getValue()))
-		        .collect(Collectors.toMap(e -> e.getKey(), e -> sinkUuidAndIdMap.get(e.getValue())));
-		
-		TABLE_AND_IDS_MAP.put(tableName, idsMap);
-		
+		addRowIdMappings(tableName, idCol, sourceRows, sinkRows);
 		if (log.isDebugEnabled()) {
-			log.info("Done adding id mappings to cache for {} table", tableName);
+			log.info("Done caching id mappings for {} table", tableName);
 		}
 	}
 	
-	public Object getSinkRowId(String tableName, Object sourceId) {
-		return TABLE_AND_IDS_MAP.get(tableName).get(sourceId);
+	public void addTempRowIdMappings(String tableName, Object[] sourceRowIds) {
+		if (log.isDebugEnabled()) {
+			log.debug("Caching {} temporary row id mappings for {} table", sourceRowIds.length, tableName);
+		}
+		
+		Table table = sinkDbHelper.getMetadataExtractor().getTable(tableName, false);
+		final String idCol = table.primaryKeys().get(0);
+		List<Map<String, Object>> sourceRows = sourceDbHelper.getRows(tableName, idCol, table.primaryKeys().get(0),
+		    sourceRowIds);
+		Object[] uuids = sourceRows.stream().map(row -> row.get("uuid")).toArray();
+		List<Map<String, Object>> sinkRows = sinkDbHelper.getRows(tableName, idCol, "uuid", uuids);
+		addRowIdMappings(tableName, idCol, sourceRows, sinkRows);
+		if (log.isDebugEnabled()) {
+			log.info("Done caching temporary row id mappings for {} table", tableName);
+		}
+	}
+	
+	private void addRowIdMappings(String tableName, String primaryKeyColumn, List<Map<String, Object>> sourceRows,
+	                              List<Map<String, Object>> sinkRows) {
+		
+		Map<Object, String> sourceIdAndUuidMap = sourceRows.stream().collect(HashMap::new,
+		    (map, row) -> map.put(row.get(primaryKeyColumn), row.get("uuid").toString()), HashMap::putAll);
+		Map<String, Object> sinkUuidAndIdMap = sinkRows.stream().collect(HashMap::new,
+		    (map, row) -> map.put(row.get("uuid").toString(), row.get(primaryKeyColumn)), HashMap::putAll);
+		//Skip any rows that are not yet written to the sink DB, this typically applies to temporarily cached tables.
+		Map<Object, Object> idsMap = sourceIdAndUuidMap.entrySet().stream()
+		        .filter(e -> sinkUuidAndIdMap.containsKey(e.getValue()))
+		        .collect(Collectors.toMap(e -> e.getKey(), e -> sinkUuidAndIdMap.get(e.getValue())));
+		TABLE_AND_IDS_MAP.computeIfAbsent(tableName, m -> new HashMap<>()).putAll(idsMap);
 	}
 	
 }
