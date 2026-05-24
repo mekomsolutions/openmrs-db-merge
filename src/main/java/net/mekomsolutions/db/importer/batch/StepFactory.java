@@ -99,7 +99,7 @@ public class StepFactory {
 		final Table table = metadataExtractor.getTable(tableName, false);
 		ItemReader<Map<String, Object>> reader = createReader(stepName, tableName, tableAlias, filterClause,
 		    table.primaryKeys(), sourceDataSource, true);
-		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(table, processorHelper);
+		ItemProcessor<Map<String, Object>, Row> rowProcessor = new RowItemProcessor(stepName, table, processorHelper);
 		ItemProcessor<Map<String, Object>, Future<Row>> processor = createAsyncProcessor(rowProcessor, executor);
 		ItemWriter<Future<Row>> writer = createRowWriter(getBatchWriter(tableName));
 		SimpleStepBuilder<Map<String, Object>, Future<Row>> builder = new StepBuilder(stepName, jobRepository)

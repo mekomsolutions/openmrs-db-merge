@@ -58,7 +58,7 @@ public class RetryItemProcessor extends ItemProcessorAdapter<Map<String, Object>
 		}
 		
 		Map<String, Object> rowData = sourceDbHelper.getRow(baseTableName, idCols, ids);
-		Row row = helper.process(baseTable, rowData, true);
+		Row row = helper.process(Constants.FAILED_ITEM_TABLE, baseTable, rowData, true);
 		if (row == null) {
 			if (log.isDebugEnabled()) {
 				final String idLabel = MergeUtils.getIdentifierLabel(baseTable);

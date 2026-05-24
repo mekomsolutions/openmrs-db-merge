@@ -76,7 +76,6 @@ public class TemporaryCachingListener {
 							continue;
 						}
 						
-						log.debug("Temporarily caching referenced row ids on {}.{}", tableName, columnName);
 						Table refTable = metadataExtractor.getTable(refTableName, false);
 						if (MergeUtils.isSubclassTable(refTableName)) {
 							String parentTable = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey()

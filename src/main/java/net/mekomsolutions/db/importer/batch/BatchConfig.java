@@ -93,10 +93,9 @@ public class BatchConfig {
 			}
 			
 			if (isObs) {
-				stepName = Constants.STEP_NAME_CHILDLESS_OBS;
-				filterClause = Constants.CHILDLESS_OBS_CLAUSE;
-				Step nextStep = stepFactory.createTableStep(stepName, tableName, Constants.TABLE_ALIAS, filterClause,
-				    sourceExtractor, processorHelper, executor, fkValueMapCache);
+				stepName = Constants.STEP_NAME_ALL_OBS;
+				Step nextStep = stepFactory.createTableStep(stepName, tableName, null, null, sourceExtractor,
+				    processorHelper, executor, fkValueMapCache);
 				simpleJobBuilder = simpleJobBuilder.next(nextStep);
 			}
 		}

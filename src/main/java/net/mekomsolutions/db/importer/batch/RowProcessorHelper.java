@@ -44,7 +44,7 @@ public class RowProcessorHelper {
 		this.fkValueMapCache = fkValueMapCache;
 	}
 	
-	public Row process(Table baseTable, Map<String, Object> item, boolean isRetry) {
+	public Row process(String stepName, Table baseTable, Map<String, Object> item, boolean isRetry) {
 		String threadName = Thread.currentThread().getName();
 		final String threadNamePrefix = (isRetry ? "retry" : "import") + ":";
 		try {
@@ -55,7 +55,7 @@ public class RowProcessorHelper {
 				log.debug("Processing: {}", key);
 			}
 			
-			return doProcess(baseTable, item);
+			return doProcess(stepName, baseTable, item);
 		}
 		catch (Throwable t) {
 			if (log.isDebugEnabled()) {
@@ -74,7 +74,7 @@ public class RowProcessorHelper {
 		}
 	}
 	
-	private Row doProcess(Table table, Map<String, Object> item) {
+	private Row doProcess(String stepName, Table table, Map<String, Object> item) {
 		if ("users".equalsIgnoreCase(table.name())) {
 			if (Constants.DAEMON_USER_UUID.equalsIgnoreCase(item.get("uuid").toString())) {
 				//Daemon user is not really a user account, skip it.
@@ -87,7 +87,7 @@ public class RowProcessorHelper {
 			}
 		}
 		
-		final Object[] values = createColumnValues(table, item);
+		final Object[] values = createColumnValues(stepName, table, item);
 		Integer id = null;
 		if (table.primaryKeys().size() == 1) {
 			String pkColumnName = table.primaryKeys().get(0);
@@ -103,13 +103,14 @@ public class RowProcessorHelper {
 	 * relationships, if applicable, and handling references between tables. This is achieved because
 	 * the method recursively calls itself to create column values for any missing referenced rows
 	 * missing that needs to be inserted into the sink database.
-	 *
+	 * 
+	 * @param stepName the step name
 	 * @param table the table whose column values are to be created
 	 * @param item a map containing key-value pairs where the key is the column name and the value is
 	 *            the associated data
 	 * @return an array of objects representing the resolved column values
 	 */
-	protected Object[] createColumnValues(Table table, Map<String, Object> item) {
+	protected Object[] createColumnValues(String stepName, Table table, Map<String, Object> item) {
 		Object[] values = new Object[table.insertColumnNames().size()];
 		for (int i = 0; i < table.insertColumnNames().size(); i++) {
 			final String columnName = table.insertColumnNames().get(i);
@@ -133,7 +134,16 @@ public class RowProcessorHelper {
 					
 					//Cached value can be null of the row has not yet been synced e.g. could be in the failure queue.
 					if (sinkRowId == null) {
-						sinkRowId = resolveForeignKeyValue(value, fk, table);
+						if (Constants.STEP_NAME_PARENT_OBS.equals(stepName)
+						        && (columnName.equals("obs_group_id") || columnName.equals("previous_version"))) {
+							//obs_group_id and previous_version point back to obs table which greatly slows down obs 
+							//sync if we try to resolve their sync ids now so we defer them to be synced by the All Obs 
+							//step after the referenced parent and previous obs have already been synced by the 
+							//Parent Obs step.
+							sinkRowId = null;
+						} else {
+							sinkRowId = resolveForeignKeyValue(value, fk, table);
+						}
 					}
 					
 					value = sinkRowId;
@@ -164,6 +174,10 @@ public class RowProcessorHelper {
 	 * @throws RuntimeException If the referenced row cannot be found in the source or sink table.
 	 */
 	private synchronized Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
+		if (log.isDebugEnabled()) {
+			log.info("Resolving foreign key value for column {}.{}", table.name(), fk.columnName());
+		}
+		
 		//TODO Cache foreign key values which can be helpful for larger tables like Obs that may repeatedly reference 
 		//the same associated row e.g patient. Even users table is referenced by multiple columns in other tables.
 		String baseRefTableName = fk.referencedTable();
