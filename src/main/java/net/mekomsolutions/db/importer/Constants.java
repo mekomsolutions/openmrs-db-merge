@@ -56,8 +56,12 @@ public class Constants {
 	
 	public static final String STEP_NAME_PARENT_OBS = "Parent Obs";
 	
+	public static final String STEP_NAME_PREVIOUS_OBS = "Previous Obs";
+	
 	public static final String STEP_NAME_ALL_OBS = "All Obs";
 	
 	public static final String PARENT_OBS_CLAUSE = "obs_id IN (SELECT obs_group_id FROM obs)";
+	
+	public static final String PREVIOUS_OBS_CLAUSE = "obs_id IN (SELECT previous_version FROM obs)";
 	
 }

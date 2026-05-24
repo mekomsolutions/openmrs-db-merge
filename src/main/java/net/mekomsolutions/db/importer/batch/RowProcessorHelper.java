@@ -1,5 +1,7 @@
 package net.mekomsolutions.db.importer.batch;
 
+import static net.mekomsolutions.db.importer.Constants.STEP_NAME_PARENT_OBS;
+import static net.mekomsolutions.db.importer.Constants.STEP_NAME_PREVIOUS_OBS;
 import static net.mekomsolutions.db.importer.MergeUtils.insertPlaceholderSubclassRow;
 
 import java.util.Map;
@@ -134,12 +136,12 @@ public class RowProcessorHelper {
 					
 					//Cached value can be null of the row has not yet been synced e.g. could be in the failure queue.
 					if (sinkRowId == null) {
-						if (Constants.STEP_NAME_PARENT_OBS.equals(stepName)
+						if ((STEP_NAME_PARENT_OBS.equals(stepName) || STEP_NAME_PREVIOUS_OBS.equals(stepName))
 						        && (columnName.equals("obs_group_id") || columnName.equals("previous_version"))) {
 							//obs_group_id and previous_version point back to obs table which greatly slows down obs 
 							//sync if we try to resolve their sync ids now so we defer them to be synced by the All Obs 
 							//step after the referenced parent and previous obs have already been synced by the 
-							//Parent Obs step.
+							//Parent Obs and Previous Obs steps.
 							sinkRowId = null;
 						} else {
 							sinkRowId = resolveForeignKeyValue(value, fk, table);
