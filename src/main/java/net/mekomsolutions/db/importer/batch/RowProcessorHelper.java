@@ -177,7 +177,7 @@ public class RowProcessorHelper {
 	 */
 	private synchronized Object resolveForeignKeyValue(Object value, ForeignKey fk, Table table) {
 		if (log.isDebugEnabled()) {
-			log.info("Resolving foreign key value for column {}.{}", table.name(), fk.columnName());
+			log.debug("Resolving foreign key value for column {}.{}", table.name(), fk.columnName());
 		}
 		
 		//TODO Cache foreign key values which can be helpful for larger tables like Obs that may repeatedly reference 
