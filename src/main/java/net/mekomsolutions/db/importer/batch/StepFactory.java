@@ -187,6 +187,7 @@ public class StepFactory {
 	public Step createRetryStep(SourceDbHelper sourceDbHelper, RowProcessorHelper processorHelper,
 	                            MetadataExtractor metadataExtractor, RetryWriter retryWriter, RetryRemover retryRemover,
 	                            TaskExecutor executor) {
+		
 		ItemReader<Map<String, Object>> reader = createReader(FAILED_ITEM_TABLE, FAILED_ITEM_TABLE, null, null,
 		    List.of("id"), mgtDataSource, false);
 		ItemProcessor<Map<String, Object>, Retry> retryProcessor = new RetryItemProcessor(sourceDbHelper, processorHelper,

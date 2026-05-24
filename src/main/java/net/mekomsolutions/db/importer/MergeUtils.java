@@ -220,7 +220,6 @@ public class MergeUtils {
 	}
 	
 	public static void handleFailure(Table table, Map<String, Object> row, Throwable throwable, MgtDbHelper mgtDbHelper) {
-		
 		final String primaryKey = getIdentifier(table, row);
 		Throwable cause = ExceptionUtils.getRootCause(throwable);
 		if (cause == null) {
@@ -287,13 +286,12 @@ public class MergeUtils {
 		}
 		
 		boolean phantomRowExists = false;
-		phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)", PHANTOM_UUID);
+		phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "uuid", PHANTOM_UUID);
 		if (phantomRowId == null) {
 			//We don't want concurrent inserts of phantom row which would result in unique constraint violation on
 			//the uuid column
 			synchronized (MergeUtils.class) {
-				phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "UPPER(uuid)",
-				    PHANTOM_UUID);
+				phantomRowId = sinkDbHelper.getColumnValue(effectiveRefTableName, effectiveRefColName, "uuid", PHANTOM_UUID);
 				if (phantomRowId == null) {
 					if (log.isTraceEnabled()) {
 						log.trace("Preparing phantom row to insert into sink table {} referenced by {}.{}",
@@ -348,7 +346,7 @@ public class MergeUtils {
 			return daemonUserId;
 		}
 		
-		Object id = sinkDbHelper.getColumnValue("users", "user_id", "UPPER(uuid)", Constants.DAEMON_USER_UUID);
+		Object id = sinkDbHelper.getColumnValue("users", "user_id", "uuid", Constants.DAEMON_USER_UUID);
 		if (id == null) {
 			throw new RuntimeException("Daemon user not found in sink database");
 		}
