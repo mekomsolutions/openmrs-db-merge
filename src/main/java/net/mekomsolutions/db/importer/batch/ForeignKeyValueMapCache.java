@@ -70,6 +70,10 @@ public class ForeignKeyValueMapCache {
 	}
 	
 	public void clearTemporaryIdMappings() {
+		if (log.isDebugEnabled()) {
+			log.debug("Clearing temporarily cached rows");
+		}
+		
 		TEMP_TABLES.forEach(t -> TABLE_AND_IDS_MAP.remove(t));
 	}
 	

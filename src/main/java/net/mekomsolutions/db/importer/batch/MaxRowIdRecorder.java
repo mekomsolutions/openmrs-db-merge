@@ -86,8 +86,9 @@ public class MaxRowIdRecorder {
 						if (!cache.isFullyCachedTable(refTableName) && cache.isTemporaryCachedTable(refTableName)) {
 							Object[] ids = rows.stream().map(r -> r.get(columnName)).filter(Objects::nonNull).toArray();
 							if (ids.length > 0) {
-								if (log.isDebugEnabled()) {
-									log.debug("{} Ref on {}.{}", tableName, refTableName, columnName);
+								if (log.isTraceEnabled()) {
+									log.trace("Temporarily caching referenced row ids on {}.{} in {} table", tableName,
+									    columnName, refTableName);
 								}
 								
 								cache.addTempRowIdMappings(refTableName, ids);
