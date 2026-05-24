@@ -72,6 +72,11 @@ public class TemporaryCachingListener {
 					        .filter(c -> table.getColumn(c).foreignKey() != null).toList()) {
 						ForeignKey fk = table.getColumn(columnName).foreignKey();
 						String refTableName = fk.referencedTable();
+						if (cache.isFullyCachedTable(refTableName)) {
+							continue;
+						}
+						
+						log.debug("Temporarily caching referenced row ids on {}.{}", tableName, columnName);
 						Table refTable = metadataExtractor.getTable(refTableName, false);
 						if (MergeUtils.isSubclassTable(refTableName)) {
 							String parentTable = refTable.getColumn(refTable.primaryKeys().get(0)).foreignKey()
@@ -84,12 +89,11 @@ public class TemporaryCachingListener {
 							refTableName = parentTable;
 						}
 						
-						if (!cache.isFullyCachedTable(refTableName) && cache.isTemporaryCachedTable(refTableName)) {
+						if (cache.isTemporaryCachedTable(refTableName)) {
 							Object[] ids = rows.stream().map(r -> r.get(columnName)).filter(Objects::nonNull).toArray();
 							if (ids.length > 0) {
 								if (log.isTraceEnabled()) {
-									log.trace("Temporarily caching referenced row ids on {}.{} in {} table", tableName,
-									    columnName, refTableName);
+									log.trace("Temporarily caching referenced row ids on {}.{}", tableName, columnName);
 								}
 								
 								cache.addTempRowIdMappings(refTableName, ids);

@@ -25,10 +25,9 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 @Slf4j
 public class ForeignKeyValueMapCache {
 	
-	//TODO Add role, privilege
 	private static final List<String> FULL_TABLES = List.of("visit_type", "encounter_type", "order_type", "form", "location",
 	    "care_setting", "order_frequency", "drug", "concept", "concept_name", "patient_identifier_type",
-	    "visit_attribute_type", "encounter_role", "person_attribute_type");
+	    "visit_attribute_type", "encounter_role", "person_attribute_type", "role", "privilege");
 	
 	private static final List<String> TEMP_TABLES = List.of("users", "provider", "person", "visit", "encounter", "orders",
 	    "obs");
@@ -79,7 +78,7 @@ public class ForeignKeyValueMapCache {
 	
 	public void addIdMappings(String tableName) {
 		log.info("Caching id mappings for {} table", tableName);
-		Table table = sinkDbHelper.getMetadataExtractor().getTable(tableName, false);
+		Table table = sinkDbHelper.getMetadataExtractor().getTable(tableName, true);
 		final String idCol = table.primaryKeys().get(0);
 		List<Map<String, Object>> sourceRows = sourceDbHelper.getAllRows(tableName, idCol);
 		List<Map<String, Object>> sinkRows = sinkDbHelper.getAllRows(tableName, idCol);
