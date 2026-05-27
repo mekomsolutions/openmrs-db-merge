@@ -84,7 +84,7 @@ public class ForeignKeyValueMapCache {
 		List<Map<String, Object>> sinkRows = sinkDbHelper.getAllRows(tableName, idCol);
 		addRowIdMappings(tableName, idCol, sourceRows, sinkRows);
 		if (log.isDebugEnabled()) {
-			log.info("Done caching id mappings for {} table", tableName);
+			log.debug("Done caching id mappings for {} table", tableName);
 		}
 	}
 	
@@ -101,7 +101,7 @@ public class ForeignKeyValueMapCache {
 		List<Map<String, Object>> sinkRows = sinkDbHelper.getRows(tableName, idCol, "uuid", uuids);
 		addRowIdMappings(tableName, idCol, sourceRows, sinkRows);
 		if (log.isDebugEnabled()) {
-			log.info("Done caching temporary row id mappings for {} table", tableName);
+			log.debug("Done caching temporary row id mappings for {} table", tableName);
 		}
 	}
 	

@@ -22,8 +22,10 @@ import net.mekomsolutions.db.importer.Table;
  * by the rows in a chunk that is being processed by the item processor to improve speed. The way
  * this works is, before a chunk of rows is processed, all referenced row id by every row in the
  * chunk are read once for each referenced table and added to the cache, after the chunk is written
- * to the sink database, these row ids are all removed from the cache.
- * 
+ * to the sink database, these row ids are all removed from the cache. As of the current spring
+ * batch version, the framework provides no call back after a batch is read, so this listener
+ * provides a way with a combination of others framework callback annotations.
+ *
  * @see ForeignKeyValueMapCache
  */
 @Slf4j
@@ -108,6 +110,8 @@ public class TemporaryCachingListener {
 	
 	@AfterWrite
 	public void afterWrite() {
+		processing = false;
+		rows = null;
 		cache.clearTemporaryIdMappings();
 	}
 	
