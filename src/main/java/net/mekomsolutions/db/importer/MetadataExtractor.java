@@ -102,7 +102,7 @@ public class MetadataExtractor {
 						if (!isSubclassTable && !isExtensionTable && !isMappingTable && !ignoreBadTables) {
 							Column uuidColum = nameColMap.get("uuid");
 							if (uuidColum == null) {
-								//TODO Future Add support for these tables
+								//TODO Add support for these tables
 								throw new RuntimeException(name + " table " + tableName + " has no uuid column");
 							}
 							

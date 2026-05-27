@@ -43,7 +43,7 @@ public class MergeUtils {
 		//INSERT INTO table1 (col1,col2) VALUES (?,?) ON DUPLICATE KEY UPDATE col1 = VALUES(col1),col2 = VALUES(col2)
 		//The query above actually would have no effect, the alternative would be to skip existing many-to-many table 
 		//rows in the RowItemProcessor but I'm guessing that would make the application slower
-		//TODO Future try it and compare the execution times
+		//TODO try it and compare the execution times
 		List<String> uniqueColumns;
 		if (isSubclassTable(tableName)) {
 			uniqueColumns = List.of(table.primaryKeys().get(0));
@@ -91,7 +91,7 @@ public class MergeUtils {
 			        "Cannot add placeholder row in table " + tableName + " that is not in the merge list");
 		}
 		
-		//TODO Future If we add support for parallel table processing, make this thread safe to avoid duplication of
+		//TODO If we add support for parallel table processing, make this thread safe to avoid duplication of
 		//placeholder row
 		Table refTable = metadataExtractor.getTable(tableName, false);
 		List<Column> requiredColumns = getRequiredColumns(refTable);

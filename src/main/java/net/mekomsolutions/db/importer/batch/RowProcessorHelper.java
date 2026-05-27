@@ -64,7 +64,7 @@ public class RowProcessorHelper {
 				log.error("Error processing row:{} -> msg: {}", item, t);
 			}
 			
-			//TODO Future for a retry update error type and message
+			//TODO for a retry update error type and message
 			if (!isRetry) {
 				MergeUtils.handleFailure(baseTable, item, t, mgtDbHelper);
 			}
@@ -180,8 +180,6 @@ public class RowProcessorHelper {
 			log.debug("Resolving foreign key value for column {}.{}", table.name(), fk.columnName());
 		}
 		
-		//TODO Cache foreign key values which can be helpful for larger tables like Obs that may repeatedly reference 
-		//the same associated row e.g patient. Even users table is referenced by multiple columns in other tables.
 		String baseRefTableName = fk.referencedTable();
 		String baseRefColName = fk.referencedColumn();
 		String effectiveRefTableName = fk.referencedTable();
