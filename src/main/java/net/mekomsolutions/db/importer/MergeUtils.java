@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -29,6 +30,8 @@ public class MergeUtils {
 	private static Integer daemonUserId;
 	
 	private static List<String> mergeTables;
+	
+	private static Map<String, Object> TABLE_PHANTOM_ID_MAP = new ConcurrentHashMap<>();
 	
 	public static void setMergeTables(List<String> tables) {
 		mergeTables = new ArrayList<>(tables);
@@ -247,18 +250,26 @@ public class MergeUtils {
 	private static Object getPhantomRowId(ForeignKey fk, String referencingTableName, MetadataExtractor metadataExtractor,
 	                                      SinkDbHelper sinkDbHelper) {
 		
-		//TODO Cache phantom row id for each table
 		final String refTableName = fk.referencedTable();
 		final String refColName = fk.referencedColumn();
+		Object phantomRowId = TABLE_PHANTOM_ID_MAP.get(refTableName);
+		if (phantomRowId != null) {
+			return phantomRowId;
+		}
+		
 		boolean isSubclassTable = MergeUtils.isSubclassTable(refTableName);
-		Object phantomRowId;
 		ForeignKey parentFk = null;
 		String effectiveRefTableName = refTableName;
 		String effectiveRefColName = refColName;
 		if (isSubclassTable) {
-			Table refTable = metadataExtractor.getTable(refTableName, false);
-			parentFk = refTable.getColumn(refColName).foreignKey();
+			Table parentTable = metadataExtractor.getTable(refTableName, false);
+			parentFk = parentTable.getColumn(refColName).foreignKey();
 			effectiveRefTableName = parentFk.referencedTable();
+			phantomRowId = TABLE_PHANTOM_ID_MAP.get(effectiveRefTableName);
+			if (phantomRowId != null) {
+				return phantomRowId;
+			}
+			
 			effectiveRefColName = parentFk.referencedColumn();
 			if (log.isTraceEnabled()) {
 				log.trace("Getting phantom row id in sink subclass table {} joined to base table {}", refTableName,
@@ -274,6 +285,7 @@ public class MergeUtils {
 					    effectiveRefTableName, referencingTableName, fk.columnName());
 				}
 				
+				TABLE_PHANTOM_ID_MAP.put(effectiveRefTableName, phantomRowId);
 				return phantomRowId;
 			}
 		}
@@ -321,6 +333,7 @@ public class MergeUtils {
 			insertPlaceholderSubclassRow(refTableName, phantomRowId, metadataExtractor, sinkDbHelper);
 		}
 		
+		TABLE_PHANTOM_ID_MAP.put(effectiveRefTableName, phantomRowId);
 		return phantomRowId;
 	}
 	
