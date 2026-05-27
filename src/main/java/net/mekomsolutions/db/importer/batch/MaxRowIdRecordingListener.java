@@ -15,6 +15,7 @@ import org.springframework.batch.item.Chunk;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.ShutdownHook;
 
 /**
  * An instance of this class is used to track the maximum table row ID written to the sink DB during
@@ -80,7 +81,7 @@ public class MaxRowIdRecordingListener {
 	
 	@AfterChunk
 	public void afterChunk(ChunkContext context) {
-		if (maxWrittenRowId != null) {
+		if (!ShutdownHook.getInstance().isShutdown() && maxWrittenRowId != null) {
 			final StepContext stepContext = context.getStepContext();
 			if (log.isTraceEnabled()) {
 				final String stepName = stepContext.getStepName();

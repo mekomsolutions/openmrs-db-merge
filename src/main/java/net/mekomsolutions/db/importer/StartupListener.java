@@ -29,6 +29,11 @@ public class StartupListener {
 			return;
 		}
 		
+		if (log.isDebugEnabled()) {
+			log.debug("Registering shutdown hook");
+		}
+		
+		Runtime.getRuntime().addShutdownHook(new Thread(ShutdownHook.getInstance()));
 		log.info("Starting the job to import {} tables", job.getStepNames());
 		JobParametersBuilder builder = new JobParametersBuilder().addLocalDateTime("timestamp", LocalDateTime.now());
 		jobLauncher.run(job, builder.toJobParameters());

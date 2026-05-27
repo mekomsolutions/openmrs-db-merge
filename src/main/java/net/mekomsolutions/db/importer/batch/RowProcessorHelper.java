@@ -17,6 +17,7 @@ import net.mekomsolutions.db.importer.ForeignKey;
 import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Row;
+import net.mekomsolutions.db.importer.ShutdownHook;
 import net.mekomsolutions.db.importer.Table;
 import net.mekomsolutions.db.importer.helpers.MgtDbHelper;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
@@ -61,11 +62,13 @@ public class RowProcessorHelper {
 		}
 		catch (Throwable t) {
 			if (log.isDebugEnabled()) {
-				log.error("Error processing row:{} -> msg: {}", item, t);
+				log.error("Error processing row: {} -> msg: {}", item, t);
 			}
 			
+			//Avoids attempt to write rows in the current batch to the failure queue, in any case it will fail 
+			//because the datasource is already closed anyway.
 			//TODO for a retry update error type and message
-			if (!isRetry) {
+			if (!isRetry && !ShutdownHook.getInstance().isShutdown()) {
 				MergeUtils.handleFailure(baseTable, item, t, mgtDbHelper);
 			}
 			
