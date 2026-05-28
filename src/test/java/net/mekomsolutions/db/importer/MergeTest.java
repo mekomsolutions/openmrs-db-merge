@@ -14,6 +14,8 @@ public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_USER = "select * from users where user_id > 2";
 	
+	private static final String QUERY_PROVIDER = "select * from provider";
+	
 	private static final String PATIENT_SUB_QUERY = "select person_id from person where person_id != 1";
 	
 	private static final String QUERY_PATIENT = "select * from patient where patient_id in (" + PATIENT_SUB_QUERY + ")";
@@ -59,10 +61,11 @@ public class MergeTest extends BaseMergeTest {
 	}
 	
 	@Test
-	@Sql({ "classpath:users.sql", "classpath:patient.sql", "classpath:visit.sql", "classpath:encounter.sql",
-	        "classpath:obs.sql", "classpath:user_property.sql", "classpath:user_role.sql" })
+	@Sql({ "classpath:users.sql", "classpath:provider.sql", "classpath:patient.sql", "classpath:visit.sql",
+	        "classpath:encounter.sql", "classpath:orders.sql", "classpath:obs.sql", "classpath:user_property.sql",
+	        "classpath:user_role.sql" })
 	public void shouldMergeAllRowsInAllTables() throws Exception {
-		//Tables -> person,users,user_role,user_property,patient,visit,encounter
+		//Tables -> person,users,provider,user_role,user_property,patient,visit,encounter,orders,obs
 		List<Map<String, Object>> persons = sinkJdbcTemplate.queryForList("select * from person where person_id > 1");
 		List<Map<String, Object>> users = sinkJdbcTemplate.queryForList("select * from users where user_id > 2");
 		List<Map<String, Object>> patients = sinkJdbcTemplate.queryForList("select * from patient");
@@ -70,8 +73,10 @@ public class MergeTest extends BaseMergeTest {
 		List<Map<String, Object>> encounters = sinkJdbcTemplate.queryForList("select * from encounter");
 		List<Map<String, Object>> userProps = sinkJdbcTemplate.queryForList(QUERY_USER_PROPS);
 		List<Map<String, Object>> userRoles = sinkJdbcTemplate.queryForList(QUERY_USER_ROLES);
+		List<Map<String, Object>> providers = sinkJdbcTemplate.queryForList(QUERY_PROVIDER);
 		Assertions.assertTrue(persons.isEmpty());
 		Assertions.assertTrue(users.isEmpty());
+		Assertions.assertTrue(providers.isEmpty());
 		Assertions.assertTrue(patients.isEmpty());
 		Assertions.assertTrue(visits.isEmpty());
 		Assertions.assertTrue(encounters.isEmpty());
@@ -82,6 +87,7 @@ public class MergeTest extends BaseMergeTest {
 		
 		persons = sinkJdbcTemplate.queryForList(QUERY_PERSON);
 		users = sinkJdbcTemplate.queryForList(QUERY_USER);
+		providers = sinkJdbcTemplate.queryForList(QUERY_PROVIDER);
 		patients = sinkJdbcTemplate.queryForList(QUERY_PATIENT);
 		visits = sinkJdbcTemplate.queryForList(QUERY_VISIT);
 		encounters = sinkJdbcTemplate.queryForList(QUERY_ENC);
@@ -91,6 +97,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(11, persons.size());
 		//All source DB users including admin, excludes daemon
 		Assertions.assertEquals(6, users.size());
+		Assertions.assertEquals(6, providers.size());
 		Assertions.assertEquals(5, patients.size());
 		Assertions.assertEquals(5, visits.size());
 		Assertions.assertEquals(5, encounters.size());
@@ -98,6 +105,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, userRoles.size());
 		verifyRows(persons, "person");
 		verifyRows(users, "users");
+		verifyRows(providers, "provider");
 		verifyRows(patients, "patient");
 		verifyRows(visits, "visit");
 		verifyRows(encounters, "encounter");

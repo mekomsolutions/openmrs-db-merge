@@ -63,6 +63,35 @@ CREATE TABLE `users` (
     CONSTRAINT `user_who_retired_this_user` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `provider` (
+    `provider_id` int NOT NULL AUTO_INCREMENT,
+    `person_id` int DEFAULT NULL,
+    `name` varchar(255) DEFAULT NULL,
+    `identifier` varchar(255) DEFAULT NULL,
+    `creator` int NOT NULL,
+    `date_created` datetime NOT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    `provider_role_id` int DEFAULT NULL,
+    PRIMARY KEY (`provider_id`),
+    UNIQUE KEY `uuid` (`uuid`),
+    KEY `provider_changed_by_fk` (`changed_by`),
+    KEY `provider_person_id_fk` (`person_id`),
+    KEY `provider_retired_by_fk` (`retired_by`),
+    KEY `provider_creator_fk` (`creator`),
+    KEY `provider_ibfk_1` (`provider_role_id`),
+    CONSTRAINT `provider_changed_by_fk` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `provider_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `provider_ibfk_1` FOREIGN KEY (`provider_role_id`) REFERENCES `providermanagement_provider_role` (`provider_role_id`),
+    CONSTRAINT `provider_person_id_fk` FOREIGN KEY (`person_id`) REFERENCES `person` (`person_id`),
+    CONSTRAINT `provider_retired_by_fk` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
 CREATE TABLE `privilege` (
     `privilege` varchar(255) NOT NULL,
     `description` text,
@@ -411,6 +440,61 @@ CREATE TABLE `encounter` (
                              CONSTRAINT `user_who_voided_encounter` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `orders` (
+    `order_id` int NOT NULL AUTO_INCREMENT,
+    `order_type_id` int DEFAULT NULL,
+    `concept_id` int NOT NULL DEFAULT '0',
+    `orderer` int NOT NULL,
+    `encounter_id` int NOT NULL,
+    `instructions` text,
+    `date_activated` datetime DEFAULT NULL,
+    `auto_expire_date` datetime DEFAULT NULL,
+    `date_stopped` datetime DEFAULT NULL,
+    `order_reason` int DEFAULT NULL,
+    `order_reason_non_coded` varchar(255) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `voided` tinyint(1) NOT NULL DEFAULT '0',
+    `voided_by` int DEFAULT NULL,
+    `date_voided` datetime DEFAULT NULL,
+    `void_reason` varchar(255) DEFAULT NULL,
+    `patient_id` int NOT NULL,
+    `accession_number` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    `urgency` varchar(50) NOT NULL DEFAULT 'ROUTINE',
+    `order_number` varchar(50) NOT NULL,
+    `previous_order_id` int DEFAULT NULL,
+    `order_action` varchar(50) NOT NULL,
+    `comment_to_fulfiller` varchar(1024) DEFAULT NULL,
+    `care_setting` int NOT NULL,
+    `scheduled_date` datetime DEFAULT NULL,
+    `order_group_id` int DEFAULT NULL,
+    `sort_weight` double DEFAULT NULL,
+    PRIMARY KEY (`order_id`),
+    UNIQUE KEY `orders_uuid_index` (`uuid`),
+    KEY `order_creator` (`creator`),
+    KEY `orders_in_encounter` (`encounter_id`),
+    KEY `type_of_order` (`order_type_id`),
+    KEY `order_for_patient` (`patient_id`),
+    KEY `user_who_voided_order` (`voided_by`),
+    KEY `previous_order_id_order_id` (`previous_order_id`),
+    KEY `orders_care_setting` (`care_setting`),
+    KEY `discontinued_because` (`order_reason`),
+    KEY `fk_orderer_provider` (`orderer`),
+    KEY `orders_order_group_id_fk` (`order_group_id`),
+    KEY `bahmni_orders_date_activated` (`date_activated`),
+    CONSTRAINT `discontinued_because` FOREIGN KEY (`order_reason`) REFERENCES `concept` (`concept_id`),
+    CONSTRAINT `fk_orderer_provider` FOREIGN KEY (`orderer`) REFERENCES `provider` (`provider_id`),
+    CONSTRAINT `order_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `order_for_patient` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`) ON UPDATE CASCADE,
+    CONSTRAINT `orders_care_setting` FOREIGN KEY (`care_setting`) REFERENCES `care_setting` (`care_setting_id`),
+    CONSTRAINT `orders_in_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `encounter` (`encounter_id`),
+    CONSTRAINT `orders_order_group_id_fk` FOREIGN KEY (`order_group_id`) REFERENCES `order_group` (`order_group_id`),
+    CONSTRAINT `previous_order_id_order_id` FOREIGN KEY (`previous_order_id`) REFERENCES `orders` (`order_id`),
+    CONSTRAINT `type_of_order` FOREIGN KEY (`order_type_id`) REFERENCES `order_type` (`order_type_id`),
+    CONSTRAINT `user_who_voided_order` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
 CREATE TABLE `obs` (
     `obs_id` int NOT NULL AUTO_INCREMENT,
     `person_id` int NOT NULL,
@@ -732,5 +816,76 @@ CREATE TABLE `concept_name` (
     CONSTRAINT `user_who_created_name` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `user_who_voided_this_name` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `providermanagement_provider_role` (
+    `provider_role_id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) NOT NULL,
+    `description` varchar(1000) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`provider_role_id`),
+    UNIQUE KEY `uuid` (`uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `order_set` (
+    `order_set_id` int NOT NULL AUTO_INCREMENT,
+    `operator` varchar(50) NOT NULL,
+    `name` varchar(255) NOT NULL,
+    `description` varchar(1000) DEFAULT NULL,
+    `creator` int NOT NULL,
+    `date_created` datetime NOT NULL,
+    `retired` tinyint(1) NOT NULL DEFAULT '0',
+    `retired_by` int DEFAULT NULL,
+    `date_retired` datetime DEFAULT NULL,
+    `retire_reason` varchar(255) DEFAULT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`order_set_id`),
+    UNIQUE KEY `uuid` (`uuid`),
+    KEY `order_set_creator_fk` (`creator`),
+    KEY `order_set_retired_by_fk` (`retired_by`),
+    KEY `order_set_changed_by_fk` (`changed_by`),
+    CONSTRAINT `order_set_changed_by_fk` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `order_set_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `order_set_retired_by_fk` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+CREATE TABLE `order_group` (
+    `order_group_id` int NOT NULL AUTO_INCREMENT,
+    `order_set_id` int DEFAULT NULL,
+    `patient_id` int NOT NULL,
+    `encounter_id` int NOT NULL,
+    `creator` int NOT NULL,
+    `date_created` datetime NOT NULL,
+    `voided` tinyint(1) NOT NULL DEFAULT '0',
+    `voided_by` int DEFAULT NULL,
+    `date_voided` datetime DEFAULT NULL,
+    `void_reason` varchar(255) DEFAULT NULL,
+    `changed_by` int DEFAULT NULL,
+    `date_changed` datetime DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    PRIMARY KEY (`order_group_id`),
+    UNIQUE KEY `uuid` (`uuid`),
+    KEY `order_group_patient_id_fk` (`patient_id`),
+    KEY `order_group_encounter_id_fk` (`encounter_id`),
+    KEY `order_group_creator_fk` (`creator`),
+    KEY `order_group_set_id_fk` (`order_set_id`),
+    KEY `order_group_voided_by_fk` (`voided_by`),
+    KEY `order_group_changed_by_fk` (`changed_by`),
+    CONSTRAINT `order_group_changed_by_fk` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `order_group_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `order_group_encounter_id_fk` FOREIGN KEY (`encounter_id`) REFERENCES `encounter` (`encounter_id`),
+    CONSTRAINT `order_group_patient_id_fk` FOREIGN KEY (`patient_id`) REFERENCES `patient` (`patient_id`),
+    CONSTRAINT `order_group_set_id_fk` FOREIGN KEY (`order_set_id`) REFERENCES `order_set` (`order_set_id`),
+    CONSTRAINT `order_group_voided_by_fk` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 SET FOREIGN_KEY_CHECKS=1;

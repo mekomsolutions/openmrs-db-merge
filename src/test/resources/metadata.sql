@@ -17,6 +17,9 @@ VALUES (1,1,'Cause Of Death','en',1,'2026-01-01 00:00:00',0,'15876266-496c-11f1-
        (2,2,'Other','en',1,'2026-01-01 00:00:00',0,'25876266-496c-11f1-b548-0242ac140004'),
        (3,3,'Weight','en',1,'2026-01-01 00:00:00',0,'35876266-496c-11f1-b548-0242ac140004');
 
+INSERT INTO care_setting (care_setting_id,name,care_setting_type,creator,date_created,retired,uuid)
+VALUES (1,'Inpatient','INPATIENT',1,'2026-01-01 00:00:00',0,'456015d7-496b-11f1-b548-0242ac140015');
+
 INSERT INTO visit_type (visit_type_id,name,creator,date_created,retired,uuid)
 VALUES (1,'Adult Initial',1,'2026-01-01 00:00:00',0,'877015d7-496b-11f1-b548-0242ac140002');
 
@@ -25,6 +28,9 @@ VALUES (1,'Inpatient Clinic',1,'2026-01-01 00:00:00',0,'567015d7-496b-11f1-b548-
 
 INSERT INTO encounter_type (encounter_type_id,name,creator,date_created,retired,uuid)
 VALUES (1,'Consultation',1,'2026-01-01 00:00:00',0,'346015d7-496b-11f1-b548-0242ac140002');
+
+INSERT INTO order_type (order_type_id,name,java_class_name,creator,date_created,retired,uuid)
+VALUES (1,'Test Order','org.openmrs.TestOrder',1,'2026-01-01 00:00:00',0,'156015d7-496b-11f1-b548-0242ac140012');
 
 INSERT INTO form (form_id,name,version,published,creator,date_created,retired,uuid)
 VALUES (1,'Triage','v1',1,1,'2026-01-01 00:00:00',0,'318015d7-496b-11f1-b548-0242ac140002');
