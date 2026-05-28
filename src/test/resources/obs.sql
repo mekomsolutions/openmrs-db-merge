@@ -1,0 +1,4 @@
+INSERT INTO obs (obs_id,person_id,concept_id,encounter_id,obs_datetime,status,previous_version,obs_group_id,value_coded,value_coded_name_id,value_numeric,value_text,value_drug,value_datetime,value_group_id,value_modifier,value_complex,comments,order_id,location_id,accession_number,form_namespace_and_path,interpretation,creator,date_created,voided,voided_by,date_voided,void_reason,uuid)
+VALUES (1001,101,3,1,'2026-01-02 01:21:00','AMENDED',null,null,null,null,170,null,null,null,null,null,null,'Test comment',null,null,'Test accession no.',null,null,11,'2026-01-02 01:21:00',1,11,'2026-01-02 01:25:00','Testing void','14524ab4-4a38-11f1-b426-0242ac140006'),
+       (1002,101,3,1,'2026-01-02 01:21:00','FINAL',1001,null,null,null,175,null,null,null,null,null,null,'Updated height',null,null,'Test accession no.',null,null,11,'2026-01-02 01:25:00',0,null,null,null,'24524ab4-4a38-11f1-b426-0242ac140006');
+

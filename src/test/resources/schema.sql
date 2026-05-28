@@ -411,6 +411,68 @@ CREATE TABLE `encounter` (
                              CONSTRAINT `user_who_voided_encounter` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
+CREATE TABLE `obs` (
+    `obs_id` int NOT NULL AUTO_INCREMENT,
+    `person_id` int NOT NULL,
+    `concept_id` int NOT NULL DEFAULT '0',
+    `encounter_id` int DEFAULT NULL,
+    `order_id` int DEFAULT NULL,
+    `obs_datetime` datetime NOT NULL,
+    `location_id` int DEFAULT NULL,
+    `obs_group_id` int DEFAULT NULL,
+    `accession_number` varchar(255) DEFAULT NULL,
+    `value_group_id` int DEFAULT NULL,
+    `value_coded` int DEFAULT NULL,
+    `value_coded_name_id` int DEFAULT NULL,
+    `value_drug` int DEFAULT NULL,
+    `value_datetime` datetime DEFAULT NULL,
+    `value_numeric` double DEFAULT NULL,
+    `value_modifier` varchar(2) DEFAULT NULL,
+    `value_text` text,
+    `value_complex` varchar(1000) DEFAULT NULL,
+    `comments` varchar(255) DEFAULT NULL,
+    `creator` int NOT NULL DEFAULT '0',
+    `date_created` datetime NOT NULL,
+    `voided` tinyint(1) NOT NULL DEFAULT '0',
+    `voided_by` int DEFAULT NULL,
+    `date_voided` datetime DEFAULT NULL,
+    `void_reason` varchar(255) DEFAULT NULL,
+    `uuid` char(38) NOT NULL,
+    `previous_version` int DEFAULT NULL,
+    `form_namespace_and_path` varchar(255) DEFAULT NULL,
+    `status` varchar(16) NOT NULL DEFAULT 'FINAL',
+    `interpretation` varchar(32) DEFAULT NULL,
+    PRIMARY KEY (`obs_id`),
+    UNIQUE KEY `obs_uuid_index` (`uuid`),
+    KEY `obs_datetime_idx` (`obs_datetime`),
+    KEY `obs_concept` (`concept_id`),
+    KEY `obs_enterer` (`creator`),
+    KEY `encounter_observations` (`encounter_id`),
+    KEY `obs_location` (`location_id`),
+    KEY `obs_grouping_id` (`obs_group_id`),
+    KEY `obs_order` (`order_id`),
+    KEY `person_obs` (`person_id`),
+    KEY `answer_concept` (`value_coded`),
+    KEY `obs_name_of_coded_value` (`value_coded_name_id`),
+    KEY `answer_concept_drug` (`value_drug`),
+    KEY `user_who_voided_obs` (`voided_by`),
+    KEY `previous_version` (`previous_version`),
+    KEY `idx_obs_encounter_id_voided_value_coded` (`encounter_id`,`voided`,`value_coded`),
+    KEY `idx_obs_person_id_concept_id_obs_datetime` (`person_id`,`concept_id`,`obs_datetime`),
+    CONSTRAINT `answer_concept` FOREIGN KEY (`value_coded`) REFERENCES `concept` (`concept_id`),
+    CONSTRAINT `answer_concept_drug` FOREIGN KEY (`value_drug`) REFERENCES `drug` (`drug_id`),
+    CONSTRAINT `encounter_observations` FOREIGN KEY (`encounter_id`) REFERENCES `encounter` (`encounter_id`),
+    CONSTRAINT `obs_concept` FOREIGN KEY (`concept_id`) REFERENCES `concept` (`concept_id`),
+    CONSTRAINT `obs_enterer` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
+    CONSTRAINT `obs_grouping_id` FOREIGN KEY (`obs_group_id`) REFERENCES `obs` (`obs_id`),
+    CONSTRAINT `obs_location` FOREIGN KEY (`location_id`) REFERENCES `location` (`location_id`),
+    CONSTRAINT `obs_name_of_coded_value` FOREIGN KEY (`value_coded_name_id`) REFERENCES `concept_name` (`concept_name_id`),
+    CONSTRAINT `obs_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
+    CONSTRAINT `person_obs` FOREIGN KEY (`person_id`) REFERENCES `person` (`person_id`) ON UPDATE CASCADE,
+    CONSTRAINT `previous_version` FOREIGN KEY (`previous_version`) REFERENCES `obs` (`obs_id`),
+    CONSTRAINT `user_who_voided_obs` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
+
 CREATE TABLE `order_type` (
     `order_type_id` int NOT NULL AUTO_INCREMENT,
     `name` varchar(255) NOT NULL DEFAULT '',
@@ -438,7 +500,7 @@ CREATE TABLE `order_type` (
     CONSTRAINT `order_type_parent_order_type` FOREIGN KEY (`parent`) REFERENCES `order_type` (`order_type_id`),
     CONSTRAINT `type_created_by` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `user_who_retired_order_type` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `care_setting` (
     `care_setting_id` int NOT NULL AUTO_INCREMENT,
@@ -463,7 +525,7 @@ CREATE TABLE `care_setting` (
     CONSTRAINT `care_setting_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
     CONSTRAINT `care_setting_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `care_setting_retired_by` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `drug` (
     `drug_id` int NOT NULL AUTO_INCREMENT,
@@ -498,7 +560,7 @@ CREATE TABLE `drug` (
     CONSTRAINT `drug_retired_by` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`),
     CONSTRAINT `primary_drug_concept` FOREIGN KEY (`concept_id`) REFERENCES `concept` (`concept_id`),
     CONSTRAINT `route_concept` FOREIGN KEY (`route`) REFERENCES `concept` (`concept_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=175 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `order_frequency` (
     `order_frequency_id` int NOT NULL AUTO_INCREMENT,
@@ -523,7 +585,7 @@ CREATE TABLE `order_frequency` (
     CONSTRAINT `order_frequency_concept_id_fk` FOREIGN KEY (`concept_id`) REFERENCES `concept` (`concept_id`),
     CONSTRAINT `order_frequency_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `order_frequency_retired_by_fk` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `patient_identifier_type` (
     `patient_identifier_type_id` int NOT NULL AUTO_INCREMENT,
@@ -554,7 +616,7 @@ CREATE TABLE `patient_identifier_type` (
     CONSTRAINT `patient_identifier_type_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
     CONSTRAINT `type_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `user_who_retired_patient_identifier_type` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `visit_attribute_type` (
     `visit_attribute_type_id` int NOT NULL AUTO_INCREMENT,
@@ -583,7 +645,7 @@ CREATE TABLE `visit_attribute_type` (
     CONSTRAINT `visit_attribute_type_changed_by_fk` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
     CONSTRAINT `visit_attribute_type_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `visit_attribute_type_retired_by_fk` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `encounter_role` (
     `encounter_role_id` int NOT NULL AUTO_INCREMENT,
@@ -607,7 +669,7 @@ CREATE TABLE `encounter_role` (
     CONSTRAINT `encounter_role_changed_by_fk` FOREIGN KEY (`changed_by`) REFERENCES `users` (`user_id`),
     CONSTRAINT `encounter_role_creator_fk` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `encounter_role_retired_by_fk` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `person_attribute_type` (
     `person_attribute_type_id` int NOT NULL AUTO_INCREMENT,
@@ -640,7 +702,7 @@ CREATE TABLE `person_attribute_type` (
     CONSTRAINT `attribute_type_creator` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `privilege_which_can_edit` FOREIGN KEY (`edit_privilege`) REFERENCES `privilege` (`privilege`),
     CONSTRAINT `user_who_retired_person_attribute_type` FOREIGN KEY (`retired_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 CREATE TABLE `concept_name` (
     `concept_name_id` int NOT NULL AUTO_INCREMENT,
@@ -669,6 +731,6 @@ CREATE TABLE `concept_name` (
     CONSTRAINT `name_for_concept` FOREIGN KEY (`concept_id`) REFERENCES `concept` (`concept_id`),
     CONSTRAINT `user_who_created_name` FOREIGN KEY (`creator`) REFERENCES `users` (`user_id`),
     CONSTRAINT `user_who_voided_this_name` FOREIGN KEY (`voided_by`) REFERENCES `users` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10881 DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3;
 
 SET FOREIGN_KEY_CHECKS=1;

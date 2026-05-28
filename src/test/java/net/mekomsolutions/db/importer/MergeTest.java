@@ -60,7 +60,7 @@ public class MergeTest extends BaseMergeTest {
 	
 	@Test
 	@Sql({ "classpath:users.sql", "classpath:patient.sql", "classpath:visit.sql", "classpath:encounter.sql",
-	        "classpath:user_property.sql", "classpath:user_role.sql" })
+	        "classpath:obs.sql", "classpath:user_property.sql", "classpath:user_role.sql" })
 	public void shouldMergeAllRowsInAllTables() throws Exception {
 		//Tables -> person,users,user_role,user_property,patient,visit,encounter
 		List<Map<String, Object>> persons = sinkJdbcTemplate.queryForList("select * from person where person_id > 1");
