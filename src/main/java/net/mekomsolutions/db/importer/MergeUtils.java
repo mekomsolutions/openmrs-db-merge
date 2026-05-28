@@ -265,11 +265,6 @@ public class MergeUtils {
 			Table parentTable = metadataExtractor.getTable(refTableName, false);
 			parentFk = parentTable.getColumn(refColName).foreignKey();
 			effectiveRefTableName = parentFk.referencedTable();
-			phantomRowId = TABLE_PHANTOM_ID_MAP.get(effectiveRefTableName);
-			if (phantomRowId != null) {
-				return phantomRowId;
-			}
-			
 			effectiveRefColName = parentFk.referencedColumn();
 			if (log.isTraceEnabled()) {
 				log.trace("Getting phantom row id in sink subclass table {} joined to base table {}", refTableName,
@@ -285,7 +280,7 @@ public class MergeUtils {
 					    effectiveRefTableName, referencingTableName, fk.columnName());
 				}
 				
-				TABLE_PHANTOM_ID_MAP.put(effectiveRefTableName, phantomRowId);
+				TABLE_PHANTOM_ID_MAP.put(refTableName, phantomRowId);
 				return phantomRowId;
 			}
 		}
@@ -333,7 +328,7 @@ public class MergeUtils {
 			insertPlaceholderSubclassRow(refTableName, phantomRowId, metadataExtractor, sinkDbHelper);
 		}
 		
-		TABLE_PHANTOM_ID_MAP.put(effectiveRefTableName, phantomRowId);
+		TABLE_PHANTOM_ID_MAP.put(refTableName, phantomRowId);
 		return phantomRowId;
 	}
 	
