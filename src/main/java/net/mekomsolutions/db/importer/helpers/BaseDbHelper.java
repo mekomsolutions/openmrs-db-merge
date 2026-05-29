@@ -2,7 +2,9 @@ package net.mekomsolutions.db.importer.helpers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import lombok.extern.slf4j.Slf4j;
@@ -96,6 +98,35 @@ public abstract class BaseDbHelper {
 			final String message = String.format("Failed to retrieve %s and uuid for rows in %s table %s matching %s",
 			    pkColName, name, tableName, filterColName);
 			throw new RuntimeException(message, e);
+		}
+	}
+	
+	/**
+	 * Retrieves a single row from a database table that matches the specified column values.
+	 *
+	 * @param tableName the name of the database table to query
+	 * @param columnNames the names of the column to match the value against
+	 * @param columnValues the values to match in the specified column
+	 * @return a map representing the row if found otherwise or null
+	 */
+	public Map<String, Object> getRow(String tableName, List<String> columnNames, Object[] columnValues) {
+		if (log.isDebugEnabled()) {
+			log.debug("Fetching row from source table {} where {} = {}", tableName, columnNames, columnValues);
+		}
+		
+		String query = String.format("SELECT * FROM %s WHERE ", tableName);
+		query += columnNames.stream().map(c -> c + " = ?").collect(Collectors.joining(" AND "));
+		try {
+			return jdbcTemplate.queryForMap(query, columnValues);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+		catch (Exception e) {
+			List<Object> valueList = List.of(columnValues);
+			final String msg = "Failed to fetch row from source table " + tableName + " where " + columnNames + " = "
+			        + valueList;
+			throw new RuntimeException(msg, e);
 		}
 	}
 	

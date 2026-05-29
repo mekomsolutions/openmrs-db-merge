@@ -1,5 +1,8 @@
 package net.mekomsolutions.db.importer;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +91,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertTrue(obs.isEmpty());
 		Assertions.assertTrue(userProps.isEmpty());
 		Assertions.assertTrue(userRoles.isEmpty());
+		Timestamp startDatetime = Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
 		
 		executeJob();
 		
@@ -105,6 +109,13 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(11, persons.size());
 		//All source DB users including admin, excludes daemon
 		Assertions.assertEquals(6, users.size());
+		final String sourceAdminUuid = "1ea1621d-45a5-11f1-9ef0-0242ac140004";
+		Map<String, Object> mergedAdmin = sinkDbHelper.getRow("users", List.of("uuid"), new Object[] { sourceAdminUuid });
+		Assertions.assertEquals(true, mergedAdmin.get("retired"));
+		Assertions.assertEquals(2, mergedAdmin.get("retired_by"));
+		Timestamp dateRetired = (Timestamp) mergedAdmin.get("date_retired");
+		Assertions.assertTrue(dateRetired.equals(startDatetime) || dateRetired.after(startDatetime));
+		Assertions.assertEquals(Constants.RETIRE_REASON, mergedAdmin.get("retire_reason"));
 		Assertions.assertEquals(6, providers.size());
 		Assertions.assertEquals(5, patients.size());
 		Assertions.assertEquals(5, visits.size());
