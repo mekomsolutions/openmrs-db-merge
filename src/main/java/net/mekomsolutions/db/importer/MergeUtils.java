@@ -262,8 +262,8 @@ public class MergeUtils {
 		String effectiveRefTableName = refTableName;
 		String effectiveRefColName = refColName;
 		if (isSubclassTable) {
-			Table parentTable = metadataExtractor.getTable(refTableName, false);
-			parentFk = parentTable.getColumn(refColName).foreignKey();
+			Table table = metadataExtractor.getTable(refTableName, false);
+			parentFk = table.getColumn(refColName).foreignKey();
 			effectiveRefTableName = parentFk.referencedTable();
 			effectiveRefColName = parentFk.referencedColumn();
 			if (log.isTraceEnabled()) {
@@ -419,6 +419,24 @@ public class MergeUtils {
 	 */
 	public static int getDefaultThreadCount() {
 		return Runtime.getRuntime().availableProcessors() * 2;
+	}
+	
+	/**
+	 * Retrieves the name of the parent table by analyzing the foreign key relationship of a given
+	 * column in a specified subclass table.
+	 *
+	 * @param subclassTableName the name of the subclass table from which the parent table is determined
+	 * @param ignoreBadTable when set to true, an exception won't be thrown for tables that have an
+	 *            unsupported structure.
+	 * @param mdExtractor an instance of MetadataExtractor used to access table metadata
+	 * @return the name of the parent table
+	 */
+	public static String getParentTableName(String subclassTableName, boolean ignoreBadTable,
+	                                        MetadataExtractor mdExtractor) {
+		
+		Table table = mdExtractor.getTable(subclassTableName, ignoreBadTable);
+		String pkColumnName = table.getColumn(table.primaryKeys().get(0)).name();
+		return table.getColumn(pkColumnName).foreignKey().referencedTable();
 	}
 	
 }

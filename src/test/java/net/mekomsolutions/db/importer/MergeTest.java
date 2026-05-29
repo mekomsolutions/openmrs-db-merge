@@ -16,9 +16,7 @@ public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_PROVIDER = "select * from provider";
 	
-	private static final String PATIENT_SUB_QUERY = "select person_id from person where person_id != 1";
-	
-	private static final String QUERY_PATIENT = "select * from patient where patient_id in (" + PATIENT_SUB_QUERY + ")";
+	private static final String QUERY_PATIENT = "select * from patient";
 	
 	private static final String QUERY_VISIT = "select * from visit";
 	

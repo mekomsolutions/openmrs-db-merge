@@ -1,9 +1,13 @@
 package net.mekomsolutions.db.importer.helpers;
 
+import static java.util.function.Function.identity;
 import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
+import static net.mekomsolutions.db.importer.MergeUtils.getParentTableName;
+import static net.mekomsolutions.db.importer.MergeUtils.isSubclassTable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,7 +24,6 @@ import org.springframework.stereotype.Component;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.Constants;
-import net.mekomsolutions.db.importer.MergeUtils;
 import net.mekomsolutions.db.importer.MetadataExtractor;
 import net.mekomsolutions.db.importer.Table;
 
@@ -35,6 +38,11 @@ public class SinkDbHelper extends BaseDbHelper {
 	
 	private static final String USER_EXISTS_QUERY = "SELECT COUNT(*) FROM users WHERE LOWER(username) IN (:"
 	        + USER_UNIQUE_COLUMNS + ") OR LOWER(system_id) IN (:" + USER_UNIQUE_COLUMNS + ")";
+	
+	private static final String PARENT_PHANTOM_SUBQUERY = "SELECT %s FROM %s WHERE uuid = '" + PHANTOM_UUID + "'";
+	
+	private static final String SUBCLASS_PHANTOM_DELETE_QUERY = "DELETE FROM %s WHERE %s = (" + PARENT_PHANTOM_SUBQUERY
+	        + ")";
 	
 	protected JdbcTemplate jdbcTemplate;
 	
@@ -128,7 +136,7 @@ public class SinkDbHelper extends BaseDbHelper {
 		String columns = String.join(",", columnNames);
 		String placeholders = columnNames.stream().map(c -> "?").collect(Collectors.joining(","));
 		String sqlTemplate = "INSERT INTO %s (%s) VALUES (%s)";
-		boolean isSubclassTable = MergeUtils.isSubclassTable(tableName);
+		boolean isSubclassTable = isSubclassTable(tableName);
 		Object parentRowId = null;
 		if (isSubclassTable) {
 			//Primary key values for subclass tables are not auto generated but instead FKs to the parent table, 
@@ -250,6 +258,10 @@ public class SinkDbHelper extends BaseDbHelper {
 		
 		try {
 			jdbcTemplate.execute(Constants.DISABLE_KEYS);
+			Map<String, String> parentSubclassMap = metadataExtractor.getTableNames().stream()
+			        .filter(t -> isSubclassTable(t))
+			        .collect(Collectors.toMap(t -> getParentTableName(t, false, metadataExtractor), identity()));
+			
 			for (String tableName : metadataExtractor.getTableNames()) {
 				//Tables with non auto incrementing primary key, calling metadataExtractor.getTable will fail 
 				if (!Constants.TABLES_WITHOUT_AUTO_INCREMENT.contains(tableName)) {
@@ -260,6 +272,22 @@ public class SinkDbHelper extends BaseDbHelper {
 				}
 				
 				try {
+					if (parentSubclassMap.containsKey(tableName)) {
+						//First delete the subclass row joined to the phantom row. 
+						Table table = metadataExtractor.getTable(tableName, true);
+						String pkColName = table.primaryKeys().get(0);
+						final String subclassTableName = parentSubclassMap.get(tableName);
+						Table subclassTable = metadataExtractor.getTable(subclassTableName, false);
+						String subclassPkColName = subclassTable.primaryKeys().get(0);
+						log.info("Deleting joined phantom row from subclass table {}", subclassTableName);
+						String q = String.format(SUBCLASS_PHANTOM_DELETE_QUERY, subclassTableName, subclassPkColName,
+						    pkColName, tableName);
+						int deletes = jdbcTemplate.update(q);
+						if (log.isTraceEnabled()) {
+							log.trace("Deleted {} phantom rows from subclass table {}", deletes, tableName);
+						}
+					}
+					
 					final String query = "DELETE FROM " + tableName + " WHERE uuid = '" + PHANTOM_UUID + "'";
 					int deletes = jdbcTemplate.update(query);
 					if (log.isTraceEnabled()) {
