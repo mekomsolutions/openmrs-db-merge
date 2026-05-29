@@ -110,7 +110,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, visits.size());
 		Assertions.assertEquals(5, encounters.size());
 		Assertions.assertEquals(5, orders.size());
-		Assertions.assertEquals(5, obs.size());
+		Assertions.assertEquals(8, obs.size());
 		Assertions.assertEquals(5, userProps.size());
 		Assertions.assertEquals(5, userRoles.size());
 		verifyRows(persons, "person");
