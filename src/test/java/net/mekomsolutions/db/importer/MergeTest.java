@@ -24,6 +24,8 @@ public class MergeTest extends BaseMergeTest {
 	
 	private static final String QUERY_ORDERS = "select * from orders";
 	
+	private static final String QUERY_OBS = "select * from obs";
+	
 	private static final String QUERY_USER_PROPS = "select * from user_property";
 	
 	private static final String QUERY_USER_ROLES = "select * from user_role";
@@ -72,6 +74,7 @@ public class MergeTest extends BaseMergeTest {
 		List<Map<String, Object>> visits = sinkJdbcTemplate.queryForList(QUERY_VISIT);
 		List<Map<String, Object>> encounters = sinkJdbcTemplate.queryForList(QUERY_ENC);
 		List<Map<String, Object>> orders = sinkJdbcTemplate.queryForList(QUERY_ORDERS);
+		List<Map<String, Object>> obs = sinkJdbcTemplate.queryForList(QUERY_OBS);
 		List<Map<String, Object>> userProps = sinkJdbcTemplate.queryForList(QUERY_USER_PROPS);
 		List<Map<String, Object>> userRoles = sinkJdbcTemplate.queryForList(QUERY_USER_ROLES);
 		List<Map<String, Object>> providers = sinkJdbcTemplate.queryForList(QUERY_PROVIDER);
@@ -82,6 +85,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertTrue(visits.isEmpty());
 		Assertions.assertTrue(encounters.isEmpty());
 		Assertions.assertTrue(orders.isEmpty());
+		Assertions.assertTrue(obs.isEmpty());
 		Assertions.assertTrue(userProps.isEmpty());
 		Assertions.assertTrue(userRoles.isEmpty());
 		
@@ -94,6 +98,7 @@ public class MergeTest extends BaseMergeTest {
 		visits = sinkJdbcTemplate.queryForList(QUERY_VISIT);
 		encounters = sinkJdbcTemplate.queryForList(QUERY_ENC);
 		orders = sinkJdbcTemplate.queryForList(QUERY_ORDERS);
+		obs = sinkJdbcTemplate.queryForList(QUERY_OBS);
 		userProps = sinkJdbcTemplate.queryForList(QUERY_USER_PROPS);
 		userRoles = sinkJdbcTemplate.queryForList(QUERY_USER_ROLES);
 		//All source DB persons including the row associated to admin and daemon
@@ -105,6 +110,7 @@ public class MergeTest extends BaseMergeTest {
 		Assertions.assertEquals(5, visits.size());
 		Assertions.assertEquals(5, encounters.size());
 		Assertions.assertEquals(5, orders.size());
+		Assertions.assertEquals(5, obs.size());
 		Assertions.assertEquals(5, userProps.size());
 		Assertions.assertEquals(5, userRoles.size());
 		verifyRows(persons, "person");
@@ -114,6 +120,7 @@ public class MergeTest extends BaseMergeTest {
 		verifyRows(visits, "visit");
 		verifyRows(encounters, "encounter");
 		verifyRows(orders, "orders");
+		verifyRows(obs, "obs");
 		verifyRows(userProps, "user_property");
 		verifyRows(userRoles, "user_role");
 	}
