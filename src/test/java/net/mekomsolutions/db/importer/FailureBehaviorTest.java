@@ -1,6 +1,5 @@
 package net.mekomsolutions.db.importer;
 
-import static net.mekomsolutions.db.importer.Constants.FAILED_ITEM_TABLE;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -13,16 +12,6 @@ import org.springframework.test.context.jdbc.Sql;
 public class FailureBehaviorTest extends BaseMergeTest {
 	
 	private static final String QUERY_VISIT = "select * from visit";
-	
-	private int getFailureCount() {
-		return mgtJdbcTemplate.queryForObject("SELECT count(*) FROM " + FAILED_ITEM_TABLE, Integer.class);
-	}
-	
-	private boolean hasFailure(String tableName, Object identifier) {
-		String query = "SELECT count(*) FROM " + FAILED_ITEM_TABLE + " WHERE table_name = '" + tableName
-		        + "' AND identifier = '" + identifier + "'";
-		return mgtJdbcTemplate.queryForObject(query, Integer.class) > 0;
-	}
 	
 	@Test
 	@Sql({ "classpath:users.sql", "classpath:provider.sql", "classpath:patient.sql", "classpath:visit.sql" })

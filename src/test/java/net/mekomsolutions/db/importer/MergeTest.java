@@ -3,7 +3,6 @@ package net.mekomsolutions.db.importer;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,38 +31,6 @@ public class MergeTest extends BaseMergeTest {
 	private static final String QUERY_USER_PROPS = "select * from user_property";
 	
 	private static final String QUERY_USER_ROLES = "select * from user_role";
-	
-	private void verifyRow(Map<String, Object> sinkRow, Table table) {
-		final String uuid = (String) sinkRow.get("uuid");
-		Map<String, Object> sourceRow;
-		if (MergeUtils.isSubclassTable(table.name())) {
-			final String pkCol = table.primaryKeys().get(0);
-			ForeignKey fk = table.getColumn(pkCol).foreignKey();
-			final String parentPkCol = extractor.getTable(fk.referencedTable(), false).primaryKeys().get(0);
-			Object sourceParentRowId = getSourceReferencedRowId(sinkRow.get(pkCol), parentPkCol, fk);
-			sourceRow = sourceDbHelper.getRow(table.name(), List.of(pkCol), new Object[] { sourceParentRowId });
-		} else if (MergeUtils.isExtensionTable(table) || MergeUtils.isMappingTable(table)) {
-			List<Object> values = new ArrayList<>(table.primaryKeys().size());
-			for (String col : table.primaryKeys()) {
-				Object value = sinkRow.get(col);
-				ForeignKey fk = table.getColumn(col).foreignKey();
-				if (fk != null) {
-					value = getSourceReferencedRowId(value, col, fk);
-				}
-				values.add(value);
-			}
-			sourceRow = sourceDbHelper.getRow(table.name(), table.primaryKeys(), values.toArray());
-		} else {
-			sourceRow = sourceDbHelper.getRow(table.name(), List.of("uuid"), new Object[] { uuid });
-		}
-		
-		assertRow(sourceRow, sinkRow, table);
-	}
-	
-	private void verifyRows(List<Map<String, Object>> rows, String tableName) {
-		Table table = extractor.getTable(tableName, false);
-		rows.forEach(row -> verifyRow(row, table));
-	}
 	
 	@Test
 	@Sql({ "classpath:users.sql", "classpath:provider.sql", "classpath:patient.sql", "classpath:visit.sql",
