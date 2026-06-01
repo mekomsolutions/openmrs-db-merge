@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
 
-public class MergeTest extends BaseMergeTest {
+public class MergeBehaviorTest extends BaseMergeTest {
 	
 	private static final String QUERY_PERSON = "select * from person where person_id > 1";
 	
