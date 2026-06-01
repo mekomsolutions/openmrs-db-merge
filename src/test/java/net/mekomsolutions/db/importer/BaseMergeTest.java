@@ -19,6 +19,7 @@ import org.springframework.test.context.jdbc.SqlConfig;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.batch.BatchConfig;
+import net.mekomsolutions.db.importer.helpers.MgtDbHelper;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 
@@ -41,14 +42,25 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	private SimpleJob job;
 	
 	@Autowired
+	@Qualifier("sourceJdbcTemplate")
+	protected JdbcTemplate sourceJdbcTemplate;
+	
+	@Autowired
 	@Qualifier("sinkJdbcTemplate")
 	protected JdbcTemplate sinkJdbcTemplate;
+	
+	@Autowired
+	@Qualifier("mgtJdbcTemplate")
+	protected JdbcTemplate mgtJdbcTemplate;
 	
 	@Autowired
 	protected SourceDbHelper sourceDbHelper;
 	
 	@Autowired
 	protected SinkDbHelper sinkDbHelper;
+	
+	@Autowired
+	protected MgtDbHelper mgtDbHelper;
 	
 	@Autowired
 	@Qualifier("sourceExtractor")
