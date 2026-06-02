@@ -1,6 +1,5 @@
 package net.mekomsolutions.db.importer.helpers;
 
-import static java.util.function.Function.identity;
 import static net.mekomsolutions.db.importer.Constants.PHANTOM_UUID;
 import static net.mekomsolutions.db.importer.MergeUtils.getParentTableName;
 import static net.mekomsolutions.db.importer.MergeUtils.isSubclassTable;
@@ -258,10 +257,9 @@ public class SinkDbHelper extends BaseDbHelper {
 		
 		try {
 			jdbcTemplate.execute(Constants.DISABLE_KEYS);
-			Map<String, String> parentSubclassMap = metadataExtractor.getTableNames().stream()
+			Map<String, List<String>> parentSubclassMap = metadataExtractor.getTableNames().stream()
 			        .filter(t -> isSubclassTable(t))
-			        .collect(Collectors.toMap(t -> getParentTableName(t, false, metadataExtractor), identity()));
-			
+			        .collect(Collectors.groupingBy(t -> getParentTableName(t, false, metadataExtractor)));
 			for (String tableName : metadataExtractor.getTableNames()) {
 				//Tables with non auto incrementing primary key, calling metadataExtractor.getTable will fail 
 				if (!Constants.TABLES_WITHOUT_AUTO_INCREMENT.contains(tableName)) {
@@ -276,16 +274,17 @@ public class SinkDbHelper extends BaseDbHelper {
 						//First delete the subclass row joined to the phantom row. 
 						Table table = metadataExtractor.getTable(tableName, true);
 						String pkColName = table.primaryKeys().get(0);
-						final String subclassTableName = parentSubclassMap.get(tableName);
-						Table subclassTable = metadataExtractor.getTable(subclassTableName, false);
-						String subclassPkColName = subclassTable.primaryKeys().get(0);
-						log.info("Deleting joined phantom row from subclass table {}", subclassTableName);
-						String q = String.format(SUBCLASS_PHANTOM_DELETE_QUERY, subclassTableName, subclassPkColName,
-						    pkColName, tableName);
-						int deletes = jdbcTemplate.update(q);
-						if (log.isTraceEnabled()) {
-							log.trace("Deleted {} phantom rows from subclass table {}", deletes, tableName);
-						}
+						parentSubclassMap.get(tableName).forEach(subclassTableName -> {
+							Table subclassTable = metadataExtractor.getTable(subclassTableName, false);
+							String subclassPkColName = subclassTable.primaryKeys().get(0);
+							log.info("Deleting joined phantom row from subclass table {}", subclassTableName);
+							String q = String.format(SUBCLASS_PHANTOM_DELETE_QUERY, subclassTableName, subclassPkColName,
+							    pkColName, tableName);
+							int deletes = jdbcTemplate.update(q);
+							if (log.isTraceEnabled()) {
+								log.trace("Deleted {} phantom rows from subclass table {}", deletes, tableName);
+							}
+						});
 					}
 					
 					final String query = "DELETE FROM " + tableName + " WHERE uuid = '" + PHANTOM_UUID + "'";
