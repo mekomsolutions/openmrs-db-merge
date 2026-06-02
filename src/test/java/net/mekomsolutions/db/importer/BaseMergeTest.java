@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.JobLauncher;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.SqlConfig;
 
@@ -68,6 +71,21 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	@Autowired
 	@Qualifier("sourceExtractor")
 	protected MetadataExtractor extractor;
+	
+	@Autowired
+	@Qualifier("processorExecutor")
+	private ThreadPoolTaskExecutor executor;
+	
+	@BeforeEach
+	public void setup() {
+		executor.initialize();
+		executor.start();
+	}
+	
+	@AfterEach
+	public void tearDown() {
+		executor.shutdown();
+	}
 	
 	protected void executeJob() throws Exception {
 		if (job.getStepNames().isEmpty()) {

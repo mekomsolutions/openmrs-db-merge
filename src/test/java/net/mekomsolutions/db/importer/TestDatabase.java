@@ -19,19 +19,20 @@ public class TestDatabase {
 	
 	public static final String MGT_DB_NAME = "mgt_db";
 	
-	public static final MariaDBContainer CONTAINER = new MariaDBContainer("mariadb:10.3.39");
+	public static MariaDBContainer container;
 	
 	public static final String ENTRY_POINT_PATH = "/docker-entrypoint-initdb.d/";
 	
-	public String getJdbcUrl() {
-		return CONTAINER.getJdbcUrl();
+	public static String getJdbcUrl() {
+		return container.getJdbcUrl();
 	}
 	
-	public void start() throws Exception {
-		CONTAINER.withDatabaseName(MGT_DB_NAME);
-		CONTAINER.withEnv("MARIADB_ROOT_PASSWORD", TEST_PASSWORD);
-		CONTAINER.withCopyFileToContainer(forClasspathResource("create_dbs.sql"), ENTRY_POINT_PATH + "create_dbs.sql");
-		Startables.deepStart(Stream.of(CONTAINER)).join();
+	public static void start() throws Exception {
+		container = new MariaDBContainer("mariadb:10.3.39");
+		container.withDatabaseName(MGT_DB_NAME);
+		container.withEnv("MARIADB_ROOT_PASSWORD", TEST_PASSWORD);
+		container.withCopyFileToContainer(forClasspathResource("create_dbs.sql"), ENTRY_POINT_PATH + "create_dbs.sql");
+		Startables.deepStart(Stream.of(container)).join();
 		createSchema("sink_db");
 		createSchema("source_db");
 		runScript("sink_db", "initial_sink.sql");
@@ -40,7 +41,7 @@ public class TestDatabase {
 		runScript("source_db", "metadata.sql");
 	}
 	
-	public String getJdbcUrl(String dbName) {
+	public static String getJdbcUrl(String dbName) {
 		String jdbcUrl = getJdbcUrl();
 		if (dbName != null) {
 			jdbcUrl = jdbcUrl.replace(TestDatabase.MGT_DB_NAME, dbName);
@@ -49,15 +50,16 @@ public class TestDatabase {
 		return jdbcUrl + "?useSSL=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true";
 	}
 	
-	public void shutdown() {
-		CONTAINER.stop();
+	public static void shutdown() {
+		container.stop();
+		container = null;
 	}
 	
-	private void createSchema(String dbName) throws Exception {
+	private static void createSchema(String dbName) throws Exception {
 		runScript(dbName, "schema.sql");
 	}
 	
-	private void runScript(String dbName, String fileName) throws Exception {
+	private static void runScript(String dbName, String fileName) throws Exception {
 		try (Connection c = DriverManager.getConnection(getJdbcUrl(dbName), TEST_USER, TEST_PASSWORD)) {
 			ScriptUtils.executeSqlScript(c, new ClassPathResource(fileName));
 		}
