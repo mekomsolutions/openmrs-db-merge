@@ -84,6 +84,7 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	@AfterEach
 	public void tearDown() {
+		MergeUtils.clearPhantomIdCache();
 		executor.shutdown();
 	}
 	

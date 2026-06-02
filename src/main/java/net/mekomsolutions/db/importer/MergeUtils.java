@@ -439,4 +439,13 @@ public class MergeUtils {
 		return table.getColumn(pkColumnName).foreignKey().referencedTable();
 	}
 	
+	/**
+	 * Clears the phantom ID cache by removing all entries from the TABLE_PHANTOM_ID_MAP. This method is
+	 * currently ONLY used in tests to reset the cached phantom ID mappings, ensuring no stale or
+	 * outdated data persists in the map between tests.
+	 */
+	public static void clearPhantomIdCache() {
+		TABLE_PHANTOM_ID_MAP.clear();
+	}
+	
 }
