@@ -8,7 +8,8 @@ Imports data from a source database into another destination database
 3. [Run Requirements](#run-requirements)
 4. [How To Build](#how-to-build)
 5. [How To Run Application](#how-to-run-application)
-6. [Configuration](#configuration)
+6. [After Merge Successfully Completes](#after-merge-successfully-completes)
+7. [Configuration](#configuration)
 
 ## About
 A spring boot application that merges 2 OpenMRS databases by copying all rows from tables in a source database to tables 
@@ -52,6 +53,10 @@ ALTER TABLE openmrs.users DROP INDEX uuid_uk;
 ```shell
 java -jar db-importer-{VERSION}.jar
 ```
+
+## After Merge Successfully Completes
+After all the tables are merged and there is no items in the failure queue, it is okay to drop the management database 
+especially if was created in the sink database.
 
 ## Configuration
 
