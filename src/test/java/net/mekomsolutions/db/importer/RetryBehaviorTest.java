@@ -32,6 +32,7 @@ public class RetryBehaviorTest extends BaseMergeTest {
 		visits = sinkJdbcTemplate.queryForList(QUERY_VISIT);
 		Assertions.assertEquals(visitCount, visits.size());
 		verifyRows(visits, "visit");
+		Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "visit"));
 	}
 	
 }

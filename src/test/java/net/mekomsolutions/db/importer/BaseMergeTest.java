@@ -12,8 +12,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.job.SimpleJob;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
@@ -40,12 +42,18 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	private static final Timestamp TIMESTAMP = Timestamp.valueOf(LocalDateTime.now());
-	
+
 	@Autowired
 	private JobLauncher jobLauncher;
 	
 	@Autowired
 	private SimpleJob job;
+
+    @Autowired
+    protected JobExplorer jobExplorer;
+
+    @Autowired
+    protected JobRepository jobRepository;
 	
 	@Autowired
 	@Qualifier("sourceJdbcTemplate")
