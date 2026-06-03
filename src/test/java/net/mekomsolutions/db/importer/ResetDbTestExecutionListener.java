@@ -34,23 +34,23 @@ public class ResetDbTestExecutionListener extends AbstractTestExecutionListener 
 	public void afterTestMethod(TestContext testContext) throws Exception {
 		LOG.info("Deleting all data from the test databases");
 		ApplicationContext ctx = testContext.getApplicationContext();
-		DataSource ds = ctx.getBean("sourceDataSource", DataSource.class);
+		/*DataSource ds = ctx.getBean("sourceDataSource", DataSource.class);
 		LOG.info("Deleting all data from the source database");
 		try (Connection c = ds.getConnection()) {
 			deleteAllData(c);
-		}
+		}*/
 		
-		ds = ctx.getBean("sinkDataSource", DataSource.class);
+		DataSource ds = ctx.getBean("sinkDataSource", DataSource.class);
 		LOG.info("Deleting all data from the sink database");
 		try (Connection c = ds.getConnection()) {
 			deleteAllData(c);
 		}
 		
-		/*ds = ctx.getBean("mgtDataSource", DataSource.class);
-		LOG.info("Deleting all data from the mgt database");
-		try (Connection c = ds.getConnection()) {
-			deleteAllData(c);
-		}*/
+		ds = ctx.getBean("mgtDataSource", DataSource.class);
+		LOG.info("Deleting all data from the failure queue in the mgt database");
+		try (Connection c = ds.getConnection(); Statement statement = c.createStatement()) {
+			statement.executeUpdate("DELETE FROM " + Constants.FAILED_ITEM_TABLE);
+		}
 	}
 	
 	/**

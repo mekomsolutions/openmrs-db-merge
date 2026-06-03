@@ -105,6 +105,15 @@ public class ForeignKeyValueMapCache {
 		}
 	}
 	
+	/**
+	 * Clears the cache. This method is currently ONLY used in tests to ensure no stale or outdated data
+	 * persists in the map between tests.
+	 */
+	public void clearCache() {
+		clearTemporaryIdMappings();
+		TABLE_AND_IDS_MAP.clear();
+	}
+	
 	private void addRowIdMappings(String tableName, String primaryKeyColumn, List<Map<String, Object>> sourceRows,
 	                              List<Map<String, Object>> sinkRows) {
 		

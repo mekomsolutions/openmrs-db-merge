@@ -101,17 +101,17 @@ public class MergeBehaviorTest extends BaseMergeTest {
 		verifyRows(obs, "obs");
 		verifyRows(userProps, "user_property");
 		verifyRows(userRoles, "user_role");
-        Assertions.assertEquals(15, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "users"));
-        Assertions.assertEquals(105, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "person"));
-        Assertions.assertEquals(105, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "patient"));
-        Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "visit"));
-        Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "encounter"));
-        Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "orders"));
+		Assertions.assertEquals(15, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "users"));
+		Assertions.assertEquals(105, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "person"));
+		Assertions.assertEquals(105, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "patient"));
+		Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "visit"));
+		Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "encounter"));
+		Assertions.assertEquals(5, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "orders"));
 		Assertions.assertEquals(1006, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "Parent Obs"));
-        Assertions.assertEquals(1001, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "Previous Obs"));
-        Assertions.assertEquals(1008, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "All Obs"));
+		Assertions.assertEquals(1001, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "Previous Obs"));
+		Assertions.assertEquals(1008, MergeUtils.getMaxRowId(jobExplorer, jobRepository, "All Obs"));
 		Assertions.assertNull(MergeUtils.getMaxRowId(jobExplorer, jobRepository, "user_role"));
-        Assertions.assertNull(MergeUtils.getMaxRowId(jobExplorer, jobRepository, "user_property"));
+		Assertions.assertNull(MergeUtils.getMaxRowId(jobExplorer, jobRepository, "user_property"));
 	}
 	
 }

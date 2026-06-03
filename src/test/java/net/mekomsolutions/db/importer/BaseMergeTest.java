@@ -27,6 +27,7 @@ import org.springframework.test.context.jdbc.SqlConfig;
 
 import lombok.extern.slf4j.Slf4j;
 import net.mekomsolutions.db.importer.batch.BatchConfig;
+import net.mekomsolutions.db.importer.batch.ForeignKeyValueMapCache;
 import net.mekomsolutions.db.importer.helpers.MgtDbHelper;
 import net.mekomsolutions.db.importer.helpers.SinkDbHelper;
 import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
@@ -42,18 +43,18 @@ import net.mekomsolutions.db.importer.helpers.SourceDbHelper;
 public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	private static final Timestamp TIMESTAMP = Timestamp.valueOf(LocalDateTime.now());
-
+	
 	@Autowired
 	private JobLauncher jobLauncher;
 	
 	@Autowired
 	private SimpleJob job;
-
-    @Autowired
-    protected JobExplorer jobExplorer;
-
-    @Autowired
-    protected JobRepository jobRepository;
+	
+	@Autowired
+	protected JobExplorer jobExplorer;
+	
+	@Autowired
+	protected JobRepository jobRepository;
 	
 	@Autowired
 	@Qualifier("sourceJdbcTemplate")
@@ -84,6 +85,9 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	@Qualifier("processorExecutor")
 	private ThreadPoolTaskExecutor executor;
 	
+	@Autowired
+	private ForeignKeyValueMapCache fkValueMapCache;
+	
 	@BeforeEach
 	public void setup() {
 		executor.initialize();
@@ -92,6 +96,7 @@ public abstract class BaseMergeTest extends BaseDbBackedTest {
 	
 	@AfterEach
 	public void tearDown() {
+		fkValueMapCache.clearCache();
 		MergeUtils.clearPhantomIdCache();
 		executor.shutdown();
 	}
