@@ -1,5 +1,5 @@
-# DB Importer
-Imports data from a source database into another destination database
+# DB Merge
+Merges 2 databases by importing data from a source database into another destination database
 
 # Table of Contents
 
@@ -51,7 +51,7 @@ ALTER TABLE openmrs.users DROP INDEX uuid_uk;
 ```
 
 ```shell
-java -jar db-importer-{VERSION}.jar
+java -jar db-merge-{VERSION}.jar
 ```
 
 ## After Merge Successfully Completes

@@ -3,11 +3,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>net.mekomsolutions.db.importer</groupId>
-    <artifactId>db-importer</artifactId>
+    <groupId>net.mekomsolutions.db.merge</groupId>
+    <artifactId>db-merge</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>DB Importer</name>
+    <name>DB Merge</name>
     <description>Merges data from a source database into destination database</description>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

@@ -6,8 +6,8 @@
             <pattern>%-5level %date [%thread] %logger{8}:%line %msg%n</pattern>
         </encoder>
     </appender>
-    <logger name="net.mekomsolutions.db.importer" level="DEBUG" />
-    <logger name="net.mekomsolutions.db.importer.MergeUtils" level="TRACE" />
+    <logger name="net.mekomsolutions.db.merge" level="DEBUG" />
+    <logger name="net.mekomsolutions.db.merge.MergeUtils" level="TRACE" />
     <root level="INFO">
         <appender-ref ref="console" />
     </root>
